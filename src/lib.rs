@@ -26,8 +26,9 @@ fn generate_getter_setter(field: &Field) -> NewTokenStream {
         pub fn #get_name(&self) -> &#attr_ty {
             &self.#attr_name_ident
         }
-        pub fn #set_name(&mut self, val: #attr_ty) {
+        pub fn #set_name(&mut self, val: #attr_ty) -> &mut Self {
             self.#attr_name_ident = val;
+            self
         }
     }
 }
@@ -43,7 +44,7 @@ fn generate_getter_setter(field: &Field) -> NewTokenStream {
 /// # Returns
 /// Returns the generated `TokenStream` containing the implementation of getter and setter methods
 /// for the struct.
-#[proc_macro_derive(Data)]
+#[proc_macro_derive(Lombok)]
 pub fn lombok_data(input: OldTokenStream) -> OldTokenStream {
     let input: DeriveInput = parse_macro_input!(input as DeriveInput);
     let name: &Ident = &input.ident;
@@ -53,7 +54,7 @@ pub fn lombok_data(input: OldTokenStream) -> OldTokenStream {
             .iter()
             .map(generate_getter_setter)
             .collect::<Vec<_>>(),
-        _ => panic!("#[derive(Data)] is only supported for structs."),
+        _ => panic!("#[derive(Lombok)] is only supported for structs."),
     };
     let expanded: NewTokenStream = quote! {
         impl #name {
