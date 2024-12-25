@@ -26,7 +26,7 @@ cargo add lombok-macros
 ```rust
 use lombok_macros::*;
 
-#[derive(Data)]
+#[derive(Lombok)]
 struct LombokMacros {
     list: Vec<String>,
 }
