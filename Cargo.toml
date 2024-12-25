@@ -7,7 +7,7 @@ license = "MIT"
 description = """A collection of procedural macros for Lombok-like functionality in Rust."""
 keywords = ["proc-macro", "Rust", "macros", "lombok", "code-generation"]
 repository = "https://github.com/ltpp-universe/lombok-macros.git"
-categories = ["macros", "development-tools"]
+categories = ["development-tools"]
 exclude = [
     "target",
     "Cargo.lock",
