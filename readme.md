@@ -26,16 +26,30 @@ cargo add lombok-macros
 ```rust
 use lombok_macros::*;
 
-#[derive(Lombok)]
-struct LombokMacros {
+#[derive(Lombok, Debug, Clone)]
+struct LombokTest<'a, 'b, T: Clone> {
+    #[get(pub(crate))]
+    #[set(pub(crate))]
     list: Vec<String>,
+    #[get(pub(crate))]
+    opt_str_lifetime_a: Option<&'a T>,
+    #[set(private)]
+    opt_str_lifetime_b: Option<&'b str>,
 }
 
 fn main() {
-    let mut data: LombokMacros = LombokMacros { list: vec![] };
+    let mut data: LombokTest<usize> = LombokTest {
+        list: Vec::new(),
+        opt_str_lifetime_a: None,
+        opt_str_lifetime_b: None,
+    };
     let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
     data.set_list(list.clone());
-    assert_eq!(*data.get_list(), list);
+    match data.get_list() {
+        left_val => {
+            assert_eq!(*left_val, list);
+        }
+    }
 }
 ```
 
