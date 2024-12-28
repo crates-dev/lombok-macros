@@ -47,7 +47,7 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
                 &self.#attr_name_ident
             }
             #[inline]
-            #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
+            #vis fn #get_mut_name(&mut self) -> &#attr_ty {
                 &self.#attr_name_ident
             }
         }
