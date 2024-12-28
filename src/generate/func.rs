@@ -1,5 +1,6 @@
 use super::constant::{
-    FIELD_SHOULD_HAVE_A_NAME, GET_METHOD_PREFIX, SET_METHOD_PREFIX, UNSUPPORTED_LOMBOK_DERIVE,
+    FIELD_SHOULD_HAVE_A_NAME, GET_METHOD_PREFIX, GET_MUT_METHOD_PREFIX, SET_METHOD_PREFIX,
+    UNSUPPORTED_LOMBOK_DERIVE,
 };
 use crate::{cfg::r#type::Cfg, parse::func::analyze_attributes};
 use proc_macro::TokenStream as OldTokenStream;
@@ -30,6 +31,7 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
     let attr_name_ident: &Ident = field.ident.as_ref().unwrap();
     let attr_ty: &Type = &field.ty;
     let get_name: Ident = format_ident!("{}{}", GET_METHOD_PREFIX, attr_name);
+    let get_mut_name: Ident = format_ident!("{}{}", GET_MUT_METHOD_PREFIX, attr_name);
     let set_name: Ident = format_ident!("{}{}", SET_METHOD_PREFIX, attr_name);
     let mut generated: NewTokenStream = quote! {};
     let mut cfg_map: HashMap<String, Vec<Cfg>> = HashMap::new();
@@ -42,6 +44,10 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
         quote! {
             #[inline]
             #vis fn #get_name(&self) -> &#attr_ty {
+                &self.#attr_name_ident
+            }
+            #[inline]
+            #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
                 &self.#attr_name_ident
             }
         }
