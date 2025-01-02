@@ -1,4 +1,5 @@
 pub const GET: &str = "get";
+pub const GET_MUT: &str = "get_mut";
 pub const SET: &str = "set";
 pub const SKIP: &str = "skip";
 pub const PUBLIC: &str = "pub";

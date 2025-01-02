@@ -1,4 +1,4 @@
-use super::constant::{GET, PRIVATE, PUBLIC, PUBLIC_CRATE, PUBLIC_SUPER, SET, SKIP};
+use super::constant::{PRIVATE, PUBLIC, PUBLIC_CRATE, PUBLIC_SUPER, SKIP};
 use crate::{cfg::r#type::Cfg, func::r#type::FuncType, visibility::r#type::Visibility};
 use proc_macro2::{TokenStream as NewTokenStream, TokenTree as NewTokenTree};
 
@@ -15,7 +15,7 @@ pub fn parse_tokens(tokens: NewTokenStream, cfg: &mut Cfg) {
         match token {
             NewTokenTree::Ident(ident) => {
                 let ident_str: String = ident.to_string();
-                if ident_str == GET || ident_str == SET {
+                if FuncType::is_known(&ident_str) {
                     if cfg.func_type.is_unknown() {
                         cfg.func_type = ident_str.parse::<FuncType>().unwrap_or_default();
                     }

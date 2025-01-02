@@ -7,6 +7,7 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FuncType {
     Get,
+    GetMut,
     Set,
     Unknow,
 }

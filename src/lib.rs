@@ -43,7 +43,7 @@ use generate::func::inner_lombok_data;
 ///     }
 /// }
 /// ```
-#[proc_macro_derive(Lombok, attributes(set, get))]
+#[proc_macro_derive(Lombok, attributes(set, get, get_mut))]
 pub fn lombok_data(input: TokenStream) -> TokenStream {
     inner_lombok_data(input)
 }

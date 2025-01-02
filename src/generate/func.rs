@@ -1,5 +1,6 @@
 use super::constant::{
-    FIELD_SHOULD_HAVE_A_NAME, GET_METHOD_PREFIX, SET_METHOD_PREFIX, UNSUPPORTED_LOMBOK_DERIVE,
+    FIELD_SHOULD_HAVE_A_NAME, GET_METHOD_PREFIX, GET_MUT_METHOD_PREFIX, SET_METHOD_PREFIX,
+    UNSUPPORTED_LOMBOK_DERIVE,
 };
 use crate::{cfg::r#type::Cfg, parse::func::analyze_attributes};
 use proc_macro::TokenStream as OldTokenStream;
@@ -30,6 +31,7 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
     let attr_name_ident: &Ident = field.ident.as_ref().unwrap();
     let attr_ty: &Type = &field.ty;
     let get_name: Ident = format_ident!("{}{}", GET_METHOD_PREFIX, attr_name);
+    let get_mut_name: Ident = format_ident!("{}{}", GET_MUT_METHOD_PREFIX, attr_name);
     let set_name: Ident = format_ident!("{}{}", SET_METHOD_PREFIX, attr_name);
     let mut generated: NewTokenStream = quote! {};
     let mut cfg_map: HashMap<String, Vec<Cfg>> = HashMap::new();
@@ -46,6 +48,14 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
             }
         }
     };
+    let get_mut_quote = |vis: NewTokenStream| {
+        quote! {
+            #[inline]
+            #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
+                &mut self.#attr_name_ident
+            }
+        }
+    };
     let set_quote = |vis: NewTokenStream| {
         quote! {
             #[inline]
@@ -56,10 +66,11 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
         }
     };
     let mut has_add_get: bool = false;
+    let mut has_add_get_mut: bool = false;
     let mut has_add_set: bool = false;
     for (_key, cfg_list) in &cfg_map {
         for cfg in cfg_list {
-            if has_add_get && has_add_set {
+            if has_add_get && has_add_set && has_add_get_mut {
                 break;
             }
             if cfg.skip && cfg.func_type.is_unknown() {
@@ -72,6 +83,12 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
                 }
                 has_add_get = true;
             }
+            if cfg.func_type.is_get_mut() {
+                if !cfg.skip && !has_add_get_mut {
+                    generated.extend(get_mut_quote(vis.clone()));
+                }
+                has_add_get_mut = true;
+            }
             if cfg.func_type.is_set() {
                 if !cfg.skip && !has_add_set {
                     generated.extend(set_quote(vis.clone()));
@@ -80,11 +97,14 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
             }
         }
     }
-    if !has_add_get || !has_add_set {
+    if !has_add_get || !has_add_set || !has_add_get_mut {
         let cfg: Cfg = Cfg::default();
         let vis: NewTokenStream = cfg.visibility.to_token_stream();
         if !has_add_get {
             generated.extend(get_quote(vis.clone()));
+        }
+        if !has_add_get_mut {
+            generated.extend(get_mut_quote(vis.clone()));
         }
         if !has_add_set {
             generated.extend(set_quote(vis.clone()));
