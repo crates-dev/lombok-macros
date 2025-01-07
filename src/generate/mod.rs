@@ -1,2 +1,2 @@
-pub mod constant;
-pub mod func;
+pub(crate) mod constant;
+pub(crate) mod func;
