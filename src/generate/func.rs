@@ -22,6 +22,7 @@ use syn::{
 ///
 /// # Returns
 /// - A `NewTokenStream` containing the generated getter and setter functions.
+#[inline]
 pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
     let attr_name: String = field
         .ident
@@ -120,6 +121,7 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
 ///
 /// # Returns
 /// - An `OldTokenStream` containing the transformed tokens with `Lombok`-style data code.
+#[inline]
 pub fn inner_lombok_data(input: OldTokenStream) -> OldTokenStream {
     let input: DeriveInput = parse_macro_input!(input as DeriveInput);
     let name: &Ident = &input.ident;

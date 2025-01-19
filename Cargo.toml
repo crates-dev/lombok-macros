@@ -1,6 +1,6 @@
 [package]
 name = "lombok-macros"
-version = "1.7.0"
+version = "1.7.1"
 edition = "2021"
 authors = ["ltpp-universe <root@ltpp.vip>"] 
 license = "MIT"
@@ -16,9 +16,29 @@ exclude = [
 ]
 
 [dependencies]
-proc-macro2 = "1.0.92"
+proc-macro2 = "1.0.93"
 quote = "1.0.38"
-syn = "2.0.95"
+syn = "2.0.96"
 
 [lib]
 proc-macro = true
+
+[profile.dev]
+incremental = false
+opt-level = 3
+lto = true
+panic = "abort"
+debug = false
+codegen-units = 1
+strip = "debuginfo"
+backtrace = "off"
+
+[profile.release]
+incremental = false
+opt-level = 3
+lto = true
+panic = "abort"
+debug = false
+codegen-units = 1
+strip = "debuginfo"
+backtrace = "off"
