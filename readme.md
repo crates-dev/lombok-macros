@@ -1,9 +1,13 @@
+<center>
+
 ## lombok-macros
 
 [![](https://img.shields.io/crates/v/lombok-macros.svg)](https://crates.io/crates/lombok-macros)
 [![](https://docs.rs/lombok-macros/badge.svg)](https://docs.rs/lombok-macros)
-[![](https://img.shields.io/crates/l/lombok-macros.svg)](./LICENSE)
 [![](https://github.com/ltpp-universe/lombok-macros/workflows/Rust/badge.svg)](https://github.com/ltpp-universe/lombok-macros/actions?query=workflow:Rust)
+[![](https://img.shields.io/crates/l/lombok-macros.svg)](./LICENSE)
+
+<center>
 
 [Official Documentation](https://docs.ltpp.vip/lombok-macros/)
 
