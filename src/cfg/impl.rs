@@ -1,5 +1,4 @@
-use super::r#type::Cfg;
-use crate::{func::r#type::FuncType, visibility::r#type::Visibility};
+use crate::*;
 
 impl Default for Cfg {
     #[inline]

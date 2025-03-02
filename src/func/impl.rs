@@ -1,6 +1,4 @@
-use super::r#type::FuncType;
-use crate::parse::constant::{GET, GET_MUT, SET};
-use std::str::FromStr;
+use crate::*;
 
 impl Default for FuncType {
     fn default() -> Self {

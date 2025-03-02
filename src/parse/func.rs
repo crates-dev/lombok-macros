@@ -1,6 +1,4 @@
-use super::constant::{PRIVATE, PUBLIC, PUBLIC_CRATE, PUBLIC_SUPER, SKIP};
-use crate::{cfg::r#type::Cfg, func::r#type::FuncType, visibility::r#type::Visibility};
-use proc_macro2::{TokenStream as NewTokenStream, TokenTree as NewTokenTree};
+use crate::*;
 
 /// Parses the provided token stream and modifies the given configuration.
 ///

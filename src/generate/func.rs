@@ -1,19 +1,4 @@
-use super::constant::{
-    FIELD_SHOULD_HAVE_A_NAME, GET_METHOD_PREFIX, GET_MUT_METHOD_PREFIX, SET_METHOD_PREFIX,
-    UNSUPPORTED_LOMBOK_DERIVE,
-};
-use crate::{cfg::r#type::Cfg, parse::func::analyze_attributes};
-use proc_macro::TokenStream as OldTokenStream;
-use proc_macro2::TokenStream as NewTokenStream;
-use quote::{format_ident, quote, ToTokens};
-use std::collections::HashMap;
-use syn::{
-    parse_macro_input, Data, DeriveInput, Field,
-    GenericParam::{self},
-    Ident, Lifetime,
-    Type::{self},
-    TypeParam,
-};
+use crate::*;
 
 /// Generates getter and setter functions for a given struct field.
 ///
@@ -204,4 +189,83 @@ pub fn inner_lombok_data(input: OldTokenStream) -> OldTokenStream {
         }
     };
     expanded.into()
+}
+
+/// Implements the `std::fmt::Display` trait for a given struct or enum.
+///
+/// This macro generates an implementation of the `Display` trait for a type,
+/// allowing it to be formatted using `{}` in formatting macros. It takes
+/// two parameters:
+/// - `input`: The input `OldTokenStream` representing the Rust item (struct, enum, etc.)
+/// - `is_format`: A boolean that controls the format used in `fmt`. If `true`, the format used
+///   will be the debug format (`{:#?}`), which prints the value in a more human-readable form,
+///   with indentation. If `false`, it will use the standard debug format (`{:?}`), which is
+///   typically more compact.
+///
+/// # Parameters
+/// - `input`: The input token stream that will be parsed as a `DeriveInput`.
+/// - `is_format`: A boolean flag to determine the formatting style to use (`true` for `#?`,
+///   `false` for `:?`).
+///
+/// # Returns
+/// - `OldTokenStream`: The generated implementation of `std::fmt::Display` for the type.
+pub(super) fn inner_display(input: OldTokenStream, is_format: bool) -> OldTokenStream {
+    let input: DeriveInput = parse_macro_input!(input as DeriveInput);
+    let name: &Ident = &input.ident;
+    let generics: &syn::Generics = &input.generics;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let expanded: NewTokenStream = if is_format {
+        quote! {
+            impl #impl_generics std::fmt::Display for #name #ty_generics #where_clause {
+                #[inline]
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    f.write_fmt(format_args!("{0:#?}", self))
+                }
+            }
+        }
+    } else {
+        quote! {
+            impl #impl_generics std::fmt::Display for #name #ty_generics #where_clause {
+                #[inline]
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    f.write_fmt(format_args!("{:?}", self))
+                }
+            }
+        }
+    };
+    OldTokenStream::from(expanded)
+}
+
+/// A wrapper function for `inner_display` that generates the `Display`
+/// implementation with the standard debug format (`{:?}`).
+///
+/// This function is essentially a shorthand for calling `inner_display`
+/// with the `is_format` parameter set to `false`, meaning it will use
+/// the compact debug format.
+///
+/// # Parameters
+/// - `input`: The input token stream that will be parsed as a `DeriveInput`.
+///
+/// # Returns
+/// - `OldTokenStream`: The generated implementation of `std::fmt::Display`
+///   for the type using the compact debug format.
+pub fn inner_display_debug(input: OldTokenStream) -> OldTokenStream {
+    inner_display(input, false)
+}
+
+/// A wrapper function for `inner_display` that generates the `Display`
+/// implementation with the detailed debug format (`{:#?}`).
+///
+/// This function is essentially a shorthand for calling `inner_display`
+/// with the `is_format` parameter set to `true`, meaning it will use
+/// the more detailed debug format with indentation.
+///
+/// # Parameters
+/// - `input`: The input token stream that will be parsed as a `DeriveInput`.
+///
+/// # Returns
+/// - `OldTokenStream`: The generated implementation of `std::fmt::Display`
+///   for the type using the detailed debug format.
+pub fn inner_display_debug_format(input: OldTokenStream) -> OldTokenStream {
+    inner_display(input, true)
 }

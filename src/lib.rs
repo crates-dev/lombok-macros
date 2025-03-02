@@ -4,7 +4,25 @@ pub(crate) mod func;
 pub(crate) mod generate;
 pub(crate) mod parse;
 pub(crate) mod visibility;
-use generate::func::inner_lombok_data;
+
+pub(crate) use cfg::r#type::*;
+pub(crate) use func::r#type::*;
+pub(crate) use generate::constant::*;
+pub(crate) use generate::func::*;
+pub(crate) use parse::{constant::*, func::*};
+pub(crate) use proc_macro::TokenStream as OldTokenStream;
+pub(crate) use proc_macro2::{TokenStream as NewTokenStream, TokenTree as NewTokenTree};
+pub(crate) use quote::{format_ident, quote, ToTokens};
+pub(crate) use std::collections::HashMap;
+pub(crate) use std::str::FromStr;
+pub(crate) use syn::{
+    parse_macro_input, Data, DeriveInput, Field,
+    GenericParam::{self},
+    Ident, Lifetime,
+    Type::{self},
+    TypeParam,
+};
+pub(crate) use visibility::r#type::*;
 
 /// This is an example of how to use the `Lombok` procedural macro with `get` and `set` attributes.
 ///
@@ -46,4 +64,42 @@ use generate::func::inner_lombok_data;
 #[proc_macro_derive(Lombok, attributes(set, get, get_mut))]
 pub fn lombok_data(input: TokenStream) -> TokenStream {
     inner_lombok_data(input)
+}
+
+/// A procedural macro that implements the `std::fmt::Display` trait for a type,
+/// using the standard debug format (`{:?}`) for formatting.
+///
+/// This macro derives the `Display` implementation for a type, allowing it to be formatted
+/// using `{:?}` in formatting macros. It uses the `inner_display_debug` function to generate
+/// the implementation with the standard debug format.
+///
+/// # Parameters
+/// - `input`: The input token stream representing the Rust item (struct, enum, etc.)
+///   for which the `Display` implementation will be generated.
+///
+/// # Returns
+/// - `TokenStream`: The generated `std::fmt::Display` implementation for the type
+///   using the standard debug format.
+#[proc_macro_derive(DisplayDebug)]
+pub fn display_debug(input: TokenStream) -> TokenStream {
+    inner_display_debug(input)
+}
+
+/// A procedural macro that implements the `std::fmt::Display` trait for a type,
+/// using the detailed debug format (`{:#?}`) for formatting.
+///
+/// This macro derives the `Display` implementation for a type, allowing it to be formatted
+/// using `{:#?}` in formatting macros. It uses the `inner_display_debug_format` function
+/// to generate the implementation with the detailed debug format.
+///
+/// # Parameters
+/// - `input`: The input token stream representing the Rust item (struct, enum, etc.)
+///   for which the `Display` implementation will be generated.
+///
+/// # Returns
+/// - `TokenStream`: The generated `std::fmt::Display` implementation for the type
+///   using the detailed debug format.
+#[proc_macro_derive(DisplayDebugFormat)]
+pub fn display_debug_format(input: TokenStream) -> TokenStream {
+    inner_display_debug_format(input)
 }

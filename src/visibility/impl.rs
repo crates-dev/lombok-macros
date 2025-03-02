@@ -1,6 +1,4 @@
-use super::r#type::Visibility;
-use proc_macro2::TokenStream as NewTokenStream;
-use quote::quote;
+use crate::*;
 
 impl Visibility {
     /// Converts the `Visibility` enum variant into a token stream representation.
