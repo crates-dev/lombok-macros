@@ -12,15 +12,15 @@ pub(crate) use generate::func::*;
 pub(crate) use parse::{constant::*, func::*};
 pub(crate) use proc_macro::TokenStream as OldTokenStream;
 pub(crate) use proc_macro2::{TokenStream as NewTokenStream, TokenTree as NewTokenTree};
-pub(crate) use quote::{format_ident, quote, ToTokens};
+pub(crate) use quote::{ToTokens, format_ident, quote};
 pub(crate) use std::collections::HashMap;
 pub(crate) use std::str::FromStr;
 pub(crate) use syn::{
-    parse_macro_input, Data, DeriveInput, Field,
+    Data, DeriveInput, Field,
     GenericParam::{self},
     Ident, Lifetime,
     Type::{self},
-    TypeParam,
+    TypeParam, parse_macro_input,
 };
 pub(crate) use visibility::r#type::*;
 
