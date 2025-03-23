@@ -8,7 +8,6 @@ impl Visibility {
     ///
     /// # Returns
     /// - A `NewTokenStream` representing the corresponding visibility modifier in Rust syntax.
-    #[inline]
     pub fn to_token_stream(&self) -> NewTokenStream {
         match self {
             Visibility::Public => quote! { pub },
@@ -25,7 +24,6 @@ impl Visibility {
     ///
     /// # Returns
     /// - `true` if the visibility is `Public`; otherwise, `false`.
-    #[inline]
     pub fn is_public(&self) -> bool {
         *self == Self::Public
     }

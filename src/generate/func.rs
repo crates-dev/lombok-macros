@@ -7,7 +7,6 @@ use crate::*;
 ///
 /// # Returns
 /// - A `NewTokenStream` containing the generated getter and setter functions.
-#[inline]
 pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
     let attr_name: String = field
         .ident
@@ -28,7 +27,6 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
     }
     let get_quote = |vis: NewTokenStream| {
         quote! {
-            #[inline]
             #vis fn #get_name(&self) -> &#attr_ty {
                 &self.#attr_name_ident
             }
@@ -36,7 +34,6 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
     };
     let get_mut_quote = |vis: NewTokenStream| {
         quote! {
-            #[inline]
             #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
                 &mut self.#attr_name_ident
             }
@@ -44,7 +41,6 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
     };
     let set_quote = |vis: NewTokenStream| {
         quote! {
-            #[inline]
             #vis fn #set_name(&mut self, val: #attr_ty) -> &mut Self {
                 self.#attr_name_ident = val;
                 self
@@ -106,7 +102,6 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
 ///
 /// # Returns
 /// - An `OldTokenStream` containing the transformed tokens with `Lombok`-style data code.
-#[inline]
 pub fn inner_lombok_data(input: OldTokenStream) -> OldTokenStream {
     let input: DeriveInput = parse_macro_input!(input as DeriveInput);
     let name: &Ident = &input.ident;
@@ -217,7 +212,6 @@ pub(super) fn inner_display(input: OldTokenStream, is_format: bool) -> OldTokenS
     let expanded: NewTokenStream = if is_format {
         quote! {
             impl #impl_generics std::fmt::Display for #name #ty_generics #where_clause {
-                #[inline]
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                     f.write_fmt(format_args!("{0:#?}", self))
                 }
@@ -226,7 +220,6 @@ pub(super) fn inner_display(input: OldTokenStream, is_format: bool) -> OldTokenS
     } else {
         quote! {
             impl #impl_generics std::fmt::Display for #name #ty_generics #where_clause {
-                #[inline]
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                     f.write_fmt(format_args!("{:?}", self))
                 }

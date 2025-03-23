@@ -27,7 +27,6 @@ impl FuncType {
     ///
     /// # Returns
     /// - `true` if the `FuncType` is `Get`; otherwise, `false`.
-    #[inline]
     pub fn is_get(&self) -> bool {
         *self == FuncType::Get
     }
@@ -39,7 +38,6 @@ impl FuncType {
     ///
     /// # Returns
     /// - `true` if the `FuncType` is `GetMut`; otherwise, `false`.
-    #[inline]
     pub fn is_get_mut(&self) -> bool {
         *self == FuncType::GetMut
     }
@@ -51,7 +49,6 @@ impl FuncType {
     ///
     /// # Returns
     /// - `true` if the `FuncType` is `Set`; otherwise, `false`.
-    #[inline]
     pub fn is_set(&self) -> bool {
         *self == FuncType::Set
     }
@@ -63,7 +60,6 @@ impl FuncType {
     ///
     /// # Returns
     /// - `true` if the `FuncType` is `Unknow`; otherwise, `false`.
-    #[inline]
     pub fn is_unknown(&self) -> bool {
         *self == Self::Unknow
     }
@@ -75,7 +71,6 @@ impl FuncType {
     ///
     /// # Returns
     /// - `true` if the `FuncType` is `Unknow`; otherwise, `false`.
-    #[inline]
     pub fn is_known(func_type_str: &str) -> bool {
         let func_type: FuncType = func_type_str.parse::<FuncType>().unwrap_or_default();
         func_type != Self::Unknow

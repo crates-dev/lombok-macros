@@ -8,7 +8,6 @@ use crate::*;
 ///
 /// # Returns
 /// - The function does not return a value. It modifies the provided `cfg` in place.
-#[inline]
 pub fn parse_tokens(tokens: NewTokenStream, cfg: &mut Cfg) {
     for token in tokens {
         match token {
@@ -45,7 +44,6 @@ pub fn parse_tokens(tokens: NewTokenStream, cfg: &mut Cfg) {
 ///
 /// # Returns
 /// - A `Cfg` structure representing the parsed configuration based on the attributes in the token stream.
-#[inline]
 pub fn analyze_attributes(tokens: NewTokenStream) -> Cfg {
     let mut cfg: Cfg = Cfg::default();
     parse_tokens(tokens, &mut cfg);
