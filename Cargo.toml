@@ -1,6 +1,6 @@
 [package]
 name = "lombok-macros"
-version = "1.9.3"
+version = "1.9.4"
 edition = "2024"
 authors = ["ltpp-universe <root@ltpp.vip>"] 
 license = "MIT"
@@ -16,9 +16,9 @@ exclude = [
 ]
 
 [dependencies]
-proc-macro2 = "1.0.94"
+proc-macro2 = "=1.0.94"
 quote = "=1.0.40"
-syn = "2.0.100"
+syn = "=2.0.100"
 
 [lib]
 proc-macro = true
