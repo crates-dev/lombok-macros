@@ -2,7 +2,7 @@ use crate::*;
 
 impl Default for FuncType {
     fn default() -> Self {
-        Self::Unknow
+        Self::Unknown
     }
 }
 
@@ -14,7 +14,7 @@ impl FromStr for FuncType {
             GET => Ok(FuncType::Get),
             GET_MUT => Ok(FuncType::GetMut),
             SET => Ok(FuncType::Set),
-            _ => Ok(FuncType::Unknow),
+            _ => Ok(FuncType::Unknown),
         }
     }
 }
@@ -53,26 +53,26 @@ impl FuncType {
         *self == FuncType::Set
     }
 
-    /// Checks if the `FuncType` is `Unknow`.
+    /// Checks if the `FuncType` is `Unknown`.
     ///
     /// # Parameters
     /// - `self`: The reference to the `FuncType` instance.
     ///
     /// # Returns
-    /// - `true` if the `FuncType` is `Unknow`; otherwise, `false`.
+    /// - `true` if the `FuncType` is `Unknown`; otherwise, `false`.
     pub fn is_unknown(&self) -> bool {
-        *self == Self::Unknow
+        *self == Self::Unknown
     }
 
-    /// Checks if the `FuncType` is `Unknow`.
+    /// Checks if the `FuncType` is `Unknown`.
     ///
     /// # Parameters
     /// - `self`: The reference to the `FuncType` instance.
     ///
     /// # Returns
-    /// - `true` if the `FuncType` is `Unknow`; otherwise, `false`.
+    /// - `true` if the `FuncType` is `Unknown`; otherwise, `false`.
     pub fn is_known(func_type_str: &str) -> bool {
         let func_type: FuncType = func_type_str.parse::<FuncType>().unwrap_or_default();
-        func_type != Self::Unknow
+        func_type != Self::Unknown
     }
 }
