@@ -7,9 +7,9 @@ pub(crate) mod visibility;
 
 pub(crate) use cfg::r#type::*;
 pub(crate) use func::r#type::*;
-pub(crate) use generate::constant::*;
+pub(crate) use generate::r#const::*;
 pub(crate) use generate::func::*;
-pub(crate) use parse::{constant::*, func::*};
+pub(crate) use parse::{r#const::*, func::*};
 pub(crate) use proc_macro::TokenStream as OldTokenStream;
 pub(crate) use proc_macro2::{TokenStream as NewTokenStream, TokenTree as NewTokenTree};
 pub(crate) use quote::{ToTokens, format_ident, quote};
