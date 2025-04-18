@@ -1,4 +1,4 @@
-use crate::{func::r#type::FuncType, visibility::r#type::Visibility};
+use crate::{func::*, visibility::*};
 
 /// Represents the configuration for function types, visibility, and skipping behavior.
 ///

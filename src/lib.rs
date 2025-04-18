@@ -5,11 +5,12 @@ pub(crate) mod generate;
 pub(crate) mod parse;
 pub(crate) mod visibility;
 
-pub(crate) use cfg::r#type::*;
-pub(crate) use func::r#type::*;
-pub(crate) use generate::r#const::*;
-pub(crate) use generate::func::*;
-pub(crate) use parse::{r#const::*, func::*};
+pub(crate) use cfg::*;
+pub(crate) use func::*;
+pub(crate) use generate::*;
+pub(crate) use parse::*;
+pub(crate) use visibility::*;
+
 pub(crate) use proc_macro::TokenStream as OldTokenStream;
 pub(crate) use proc_macro2::{TokenStream as NewTokenStream, TokenTree as NewTokenTree};
 pub(crate) use quote::{ToTokens, format_ident, quote};
@@ -22,7 +23,6 @@ pub(crate) use syn::{
     Type::{self},
     TypeParam, parse_macro_input,
 };
-pub(crate) use visibility::r#type::*;
 
 /// This is an example of how to use the `Lombok` procedural macro with `get` and `set` attributes.
 ///
