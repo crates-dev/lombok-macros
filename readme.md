@@ -227,7 +227,7 @@ fn main() {
 use lombok_macros::*;
 use std::fmt::Debug;
 
-#[derive(Lombok, Debug, Clone, DisplayDebugFormat)]
+#[derive(Data, Debug, Clone, DisplayDebugFormat)]
 struct LombokTest<'a, 'b, T: Clone + Debug> {
     #[get(pub(crate))]
     #[set(pub(crate))]

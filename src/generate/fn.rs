@@ -4,10 +4,17 @@ use crate::*;
 ///
 /// # Parameters
 /// - `field`: A reference to the `Field` structure representing the field for which the getter and setter will be generated.
+/// - `need_getter`: A boolean indicating whether a getter function should be generated.
+/// - `need_setter`: A boolean indicating whether a setter function should be generated.
 ///
 /// # Returns
 /// - A `NewTokenStream` containing the generated getter and setter functions.
-pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
+pub fn generate_getter_setter(
+    field: &Field,
+    need_getter: bool,
+    need_getter_mut: bool,
+    need_setter: bool,
+) -> NewTokenStream {
     let attr_name: String = field
         .ident
         .as_ref()
@@ -26,25 +33,37 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
         cfg_map.entry(name).or_insert_with(Vec::new).push(cfg);
     }
     let get_quote = |vis: NewTokenStream| {
-        quote! {
-            #vis fn #get_name(&self) -> &#attr_ty {
-                &self.#attr_name_ident
+        if need_getter {
+            quote! {
+                #vis fn #get_name(&self) -> &#attr_ty {
+                    &self.#attr_name_ident
+                }
             }
+        } else {
+            quote! {}
         }
     };
     let get_mut_quote = |vis: NewTokenStream| {
-        quote! {
-            #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
-                &mut self.#attr_name_ident
+        if need_getter_mut {
+            quote! {
+                #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
+                    &mut self.#attr_name_ident
+                }
             }
+        } else {
+            quote! {}
         }
     };
     let set_quote = |vis: NewTokenStream| {
-        quote! {
-            #vis fn #set_name(&mut self, val: #attr_ty) -> &mut Self {
-                self.#attr_name_ident = val;
-                self
+        if need_setter {
+            quote! {
+                #vis fn #set_name(&mut self, val: #attr_ty) -> &mut Self {
+                    self.#attr_name_ident = val;
+                    self
+                }
             }
+        } else {
+            quote! {}
         }
     };
     let mut has_add_get: bool = false;
@@ -99,10 +118,18 @@ pub fn generate_getter_setter(field: &Field) -> NewTokenStream {
 ///
 /// # Parameters
 /// - `input`: An `OldTokenStream` representing the input tokens to be processed.
+/// - `need_getter`: A boolean indicating whether getter functions should be generated.
+/// - `need_getter_mut`: A boolean indicating whether mutable getter functions should be generated.
+/// - `need_setter`: A boolean indicating whether setter functions should be generated.
 ///
 /// # Returns
 /// - An `OldTokenStream` containing the transformed tokens with `Lombok`-style data code.
-pub fn inner_lombok_data(input: OldTokenStream) -> OldTokenStream {
+pub fn inner_lombok_data(
+    input: OldTokenStream,
+    need_getter: bool,
+    need_getter_mut: bool,
+    need_setter: bool,
+) -> OldTokenStream {
     let input: DeriveInput = parse_macro_input!(input as DeriveInput);
     let name: &Ident = &input.ident;
     let type_bounds: Vec<TypeParam> = input
@@ -145,7 +172,7 @@ pub fn inner_lombok_data(input: OldTokenStream) -> OldTokenStream {
         Data::Struct(ref s) => s
             .fields
             .iter()
-            .map(generate_getter_setter)
+            .map(|field| generate_getter_setter(field, need_getter, need_getter_mut, need_setter))
             .collect::<Vec<_>>(),
         _ => panic!("{}", UNSUPPORTED_LOMBOK_DERIVE),
     };

@@ -24,10 +24,110 @@ pub(crate) use syn::{
     TypeParam, parse_macro_input,
 };
 
-/// This is an example of how to use the `Lombok` procedural macro with `get` and `set` attributes.
+/// This is an example of how to use the `Lombok` procedural macro with `get` attributes.
 ///
-/// The `Lombok` procedural macro is used to automatically generate getters and setters for struct fields.
-/// The `get` attribute controls the visibility of the getter function, and the `set` attribute controls
+/// The `Lombok` procedural macro is used to automatically generate getter methods for struct fields.
+/// The `get` attribute controls the visibility of the generated getter method.
+///
+/// Example:
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Getter, Clone)]
+/// struct LombokTest2<'a, 'b, T: Clone> {
+///     #[get(pub(crate))]
+///     list: Vec<String>,
+///     #[get(pub(crate))]
+///     opt_str_lifetime_a: Option<&'a T>,
+///     opt_str_lifetime_b: Option<&'b str>,
+/// }
+/// let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
+/// let data2: LombokTest2<usize> = LombokTest2 {
+///     list: list.clone(),
+///     opt_str_lifetime_a: None,
+///     opt_str_lifetime_b: None,
+/// };
+/// let get_list: Vec<String> = data2.get_list().clone();
+/// assert_eq!(get_list, list);
+/// ```
+#[proc_macro_derive(Getter, attributes(get))]
+pub fn getter(input: TokenStream) -> TokenStream {
+    inner_lombok_data(input, true, false, false)
+}
+
+/// This is an example of how to use the `Lombok` procedural macro with `get_mut` attributes.
+///
+/// The `Lombok` procedural macro is used to automatically generate mutable getters for struct fields.
+/// The `get_mut` attribute controls the visibility of the mutable getter function.
+///
+/// Example:
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(GetterMut, Clone)]
+/// struct LombokTest2<'a, 'b, T: Clone> {
+///     #[get_mut(pub(crate))]
+///     list: Vec<String>,
+///     #[get_mut(pub(crate))]
+///     opt_str_lifetime_a: Option<&'a T>,
+///     opt_str_lifetime_b: Option<&'b str>,
+/// }
+/// let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
+/// let mut data2: LombokTest2<usize> = LombokTest2 {
+///     list: list.clone(),
+///     opt_str_lifetime_a: None,
+///     opt_str_lifetime_b: None,
+/// };
+/// let get_list: Vec<String> = data2.get_mut_list().clone();
+/// assert_eq!(get_list, list);
+/// ```
+#[proc_macro_derive(GetterMut, attributes(get_mut))]
+pub fn getter_mut(input: TokenStream) -> TokenStream {
+    inner_lombok_data(input, false, true, false)
+}
+
+/// This is an example of how to use the `Lombok` procedural macro with `set` attributes.
+///
+/// The `Lombok` procedural macro is used to automatically generate setters for struct fields.
+/// The `set` attribute controls the visibility of the setter function.
+///
+/// Example:
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Setter, Debug, Clone)]
+/// struct LombokTest<'a, 'b, T: Clone> {
+///     #[set(pub(crate))]
+///     list: Vec<String>,
+///     opt_str_lifetime_a: Option<&'a T>,
+///     #[set(private)]
+///     opt_str_lifetime_b: Option<&'b str>,
+/// }
+/// let mut data: LombokTest<usize> = LombokTest {
+///     list: Vec::new(),
+///     opt_str_lifetime_a: None,
+///     opt_str_lifetime_b: None,
+/// };
+/// let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
+/// data.set_list(list.clone());
+/// match data.list {
+///     left_val => {
+///         assert_eq!(*left_val, list);
+///     }
+/// }
+/// ```
+#[proc_macro_derive(Setter, attributes(set))]
+pub fn setter(input: TokenStream) -> TokenStream {
+    inner_lombok_data(input, false, false, true)
+}
+
+/// This is an example of how to use the `Lombok` procedural macro with `get`, `get_mut`, and `set` attributes.
+///
+/// The `Lombok` procedural macro is used to automatically generate getters, mutable getters, and setters for struct fields.
+/// The `get` and `get_mut` attributes control the visibility of the getter functions, while the `set` attribute controls
 /// the visibility of the setter function.
 ///
 /// Example:
@@ -35,7 +135,7 @@ pub(crate) use syn::{
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Lombok, Debug, Clone)]
+/// #[derive(Data, Debug, Clone)]
 /// struct LombokTest<'a, 'b, T: Clone> {
 ///     #[get(pub(crate))]
 ///     #[set(pub(crate))]
@@ -45,25 +145,22 @@ pub(crate) use syn::{
 ///     #[set(private)]
 ///     opt_str_lifetime_b: Option<&'b str>,
 /// }
-///
-/// fn main() {
-///     let mut data: LombokTest<usize> = LombokTest {
-///         list: Vec::new(),
-///         opt_str_lifetime_a: None,
-///         opt_str_lifetime_b: None,
-///     };
-///     let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
-///     data.set_list(list.clone());
-///     match data.get_list() {
-///         left_val => {
-///             assert_eq!(*left_val, list);
-///         }
+/// let mut data: LombokTest<usize> = LombokTest {
+///     list: Vec::new(),
+///     opt_str_lifetime_a: None,
+///     opt_str_lifetime_b: None,
+/// };
+/// let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
+/// data.set_list(list.clone());
+/// match data.get_list() {
+///     left_val => {
+///         assert_eq!(*left_val, list);
 ///     }
 /// }
 /// ```
-#[proc_macro_derive(Lombok, attributes(set, get, get_mut))]
-pub fn lombok_data(input: TokenStream) -> TokenStream {
-    inner_lombok_data(input)
+#[proc_macro_derive(Data, attributes(set, get, get_mut))]
+pub fn data(input: TokenStream) -> TokenStream {
+    inner_lombok_data(input, true, true, true)
 }
 
 /// A procedural macro that implements the `std::fmt::Display` trait for a type,
