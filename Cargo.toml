@@ -1,12 +1,12 @@
 [package]
 name = "lombok-macros"
-version = "1.11.0"
+version = "1.11.1"
 edition = "2024"
-authors = ["ltpp-universe <root@ltpp.vip>"] 
+authors = ["eastspire <root@ltpp.vip>"] 
 license = "MIT"
 description = """A collection of procedural macros for Lombok-like functionality in Rust."""
 keywords = ["proc-macro", "get-set", "macros", "lombok", "code-generation"]
-repository = "https://github.com/ltpp-universe/lombok-macros.git"
+repository = "https://github.com/eastspire/lombok-macros.git"
 categories = ["development-tools"]
 exclude = [
     "target",
