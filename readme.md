@@ -34,7 +34,7 @@ cargo add lombok-macros
 use lombok_macros::*;
 use std::fmt::Debug;
 
-#[derive(Lombok, Debug, Clone, DisplayDebug)]
+#[derive(Data, Debug, Clone, DisplayDebug)]
 struct LombokTest<'a, 'b, T: Clone + Debug> {
     #[get(pub(crate))]
     #[set(pub(crate))]
