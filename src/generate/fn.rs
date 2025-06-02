@@ -168,6 +168,7 @@ pub fn inner_lombok_data(
             }
         })
         .collect();
+    let where_clause: &Option<WhereClause> = &input.generics.where_clause;
     let methods: Vec<NewTokenStream> = match input.data {
         Data::Struct(ref s) => s
             .fields
@@ -179,7 +180,7 @@ pub fn inner_lombok_data(
     let expanded: NewTokenStream = if lifetimes.is_empty() {
         if type_bounds.is_empty() {
             quote! {
-                impl #name {
+                impl #name #where_clause {
                     #(#methods)*
                 }
             }
@@ -187,7 +188,7 @@ pub fn inner_lombok_data(
             let type_bounds_generics: NewTokenStream = quote! { #(#type_bounds),* };
             let type_generics: NewTokenStream = quote! { #(#types),* };
             quote! {
-                impl<#type_bounds_generics> #name<#type_generics> {
+                impl<#type_bounds_generics> #name<#type_generics> #where_clause {
                     #(#methods)*
                 }
             }
@@ -196,7 +197,7 @@ pub fn inner_lombok_data(
         let lifetimes_generics: NewTokenStream = quote! { #(#lifetimes),* };
         if type_bounds.is_empty() {
             quote! {
-                impl<#lifetimes_generics> #name<#lifetimes_generics> {
+                impl<#lifetimes_generics> #name<#lifetimes_generics> #where_clause {
                     #(#methods)*
                 }
             }
@@ -204,7 +205,7 @@ pub fn inner_lombok_data(
             let type_bounds_generics: NewTokenStream = quote! { #(#type_bounds),* };
             let type_generics: NewTokenStream = quote! { #(#types),* };
             quote! {
-                impl<#lifetimes_generics, #type_bounds_generics> #name<#lifetimes_generics, #type_generics> {
+                impl<#lifetimes_generics, #type_bounds_generics> #name<#lifetimes_generics, #type_generics> #where_clause {
                     #(#methods)*
                 }
             }

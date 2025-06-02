@@ -21,7 +21,7 @@ pub(crate) use syn::{
     GenericParam::{self},
     Ident, Lifetime,
     Type::{self},
-    TypeParam, parse_macro_input,
+    TypeParam, WhereClause, parse_macro_input,
 };
 
 /// This is an example of how to use the `Lombok` procedural macro with `get` attributes.

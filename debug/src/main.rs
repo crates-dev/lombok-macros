@@ -2,7 +2,10 @@ use lombok_macros::*;
 use std::fmt::Debug;
 
 #[derive(Data, Debug, Clone, DisplayDebugFormat)]
-struct LombokTest<'a, 'b, T: Clone + Debug> {
+struct LombokTest<'a, 'b, T: Clone>
+where
+    T: Debug,
+{
     #[get(pub(crate))]
     #[set(pub(crate))]
     list: Vec<String>,
