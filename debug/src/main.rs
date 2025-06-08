@@ -1,3 +1,5 @@
+#![allow(warnings)]
+
 use lombok_macros::*;
 use std::fmt::Debug;
 
@@ -14,6 +16,13 @@ where
     #[set(private)]
     #[get_mut(pub(crate))]
     opt_str_lifetime_b: Option<&'b str>,
+    r#type: &'a str,
+}
+
+impl<'a, 'b, T: Clone + Debug> LombokTest<'a, 'b, T> {
+    pub fn test_type(&self) {
+        self.r#type;
+    }
 }
 
 fn main() {
@@ -21,6 +30,7 @@ fn main() {
         list: Vec::new(),
         opt_str_lifetime_a: None,
         opt_str_lifetime_b: None,
+        r#type: "type",
     };
     let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
     data.set_list(list.clone());

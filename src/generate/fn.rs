@@ -1,5 +1,14 @@
 use crate::*;
 
+fn get_clean_attr_name(attr_str: &str) -> String {
+    let clean_attr: String = if let Some(stripped) = attr_str.strip_prefix("r#") {
+        stripped.to_owned()
+    } else {
+        attr_str.to_owned()
+    };
+    clean_attr
+}
+
 /// Generates getter and setter functions for a given struct field.
 ///
 /// # Parameters
@@ -22,9 +31,10 @@ pub fn generate_getter_setter(
         .to_string();
     let attr_name_ident: &Ident = field.ident.as_ref().unwrap();
     let attr_ty: &Type = &field.ty;
-    let get_name: Ident = format_ident!("{}{}", GET_METHOD_PREFIX, attr_name);
-    let get_mut_name: Ident = format_ident!("{}{}", GET_MUT_METHOD_PREFIX, attr_name);
-    let set_name: Ident = format_ident!("{}{}", SET_METHOD_PREFIX, attr_name);
+    let clean_attr_name: String = get_clean_attr_name(&attr_name);
+    let get_name: Ident = format_ident!("{}{}", GET_METHOD_PREFIX, clean_attr_name);
+    let get_mut_name: Ident = format_ident!("{}{}", GET_MUT_METHOD_PREFIX, clean_attr_name);
+    let set_name: Ident = format_ident!("{}{}", SET_METHOD_PREFIX, clean_attr_name);
     let mut generated: NewTokenStream = quote! {};
     let mut cfg_map: HashMap<String, Vec<Cfg>> = HashMap::new();
     for attr in &field.attrs {
