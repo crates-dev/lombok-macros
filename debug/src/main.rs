@@ -19,6 +19,22 @@ where
     r#type: &'a str,
 }
 
+#[derive(Data, Debug, Clone, DisplayDebugFormat)]
+struct r#type<'a, 'b, T: Clone>
+where
+    T: Debug,
+{
+    #[get(pub(crate))]
+    #[set(pub(crate))]
+    list: Vec<String>,
+    #[get(pub(crate))]
+    opt_str_lifetime_a: Option<&'a T>,
+    #[set(private)]
+    #[get_mut(pub(crate))]
+    opt_str_lifetime_b: Option<&'b str>,
+    r#type: &'a str,
+}
+
 impl<'a, 'b, T: Clone + Debug> LombokTest<'a, 'b, T> {
     pub fn test_type(&self) {
         self.r#type;
