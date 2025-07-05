@@ -1,8 +1,8 @@
 [package]
 name = "lombok-macros"
-version = "1.12.1"
+version = "1.12.2"
 edition = "2024"
-authors = ["root@ltpp.vip"] 
+authors = ["root@ltpp.vip"]
 license = "MIT"
 description = """A collection of procedural macros for Lombok-like functionality in Rust."""
 keywords = ["proc-macro", "get-set", "macros", "lombok", "code-generation"]
@@ -19,7 +19,7 @@ exclude = [
 [dependencies]
 proc-macro2 = "1.0.95"
 quote = "1.0.40"
-syn = "2.0.101"
+syn = "2.0.104"
 
 [lib]
 proc-macro = true
