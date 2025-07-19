@@ -14,6 +14,7 @@ impl FromStr for FuncType {
             GET => Ok(FuncType::Get),
             GET_MUT => Ok(FuncType::GetMut),
             SET => Ok(FuncType::Set),
+            DEBUG => Ok(FuncType::Debug),
             _ => Ok(FuncType::Unknown),
         }
     }
@@ -51,6 +52,17 @@ impl FuncType {
     /// - `true` if the `FuncType` is `Set`; otherwise, `false`.
     pub fn is_set(&self) -> bool {
         *self == FuncType::Set
+    }
+
+    /// Checks if the `FuncType` is `Debug`.
+    ///
+    /// # Parameters
+    /// - `self`: The reference to the `FuncType` instance.
+    ///
+    /// # Returns
+    /// - `true` if the `FuncType` is `Debug`; otherwise, `false`.
+    pub fn is_debug(&self) -> bool {
+        *self == FuncType::Debug
     }
 
     /// Checks if the `FuncType` is `Unknown`.

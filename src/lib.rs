@@ -200,3 +200,63 @@ pub fn display_debug(input: TokenStream) -> TokenStream {
 pub fn display_debug_format(input: TokenStream) -> TokenStream {
     inner_display_debug_format(input)
 }
+
+/// A procedural macro that implements the `std::fmt::Debug` trait for a type,
+/// with support for the `#[debug(skip)]` attribute to skip specific fields.
+///
+/// This macro derives a custom Debug implementation that behaves like the standard
+/// library's Debug derive, but allows individual fields to be excluded from the
+/// debug output by annotating them with `#[debug(skip)]`.
+///
+/// # Supported Attributes
+/// - `#[debug(skip)]`: Excludes the field from the debug output
+///
+/// # Examples
+///
+/// ## Struct Example
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(CustomDebug)]
+/// struct User {
+///     name: String,
+///     #[debug(skip)]
+///     password: String,
+///     email: String,
+/// }
+///
+/// let user = User {
+///     name: "Alice".to_string(),
+///     password: "secret123".to_string(),
+///     email: "alice@example.com".to_string(),
+/// };
+/// println!("{:?}", user);
+/// // Output: User { name: "Alice", email: "alice@example.com" }
+/// ```
+///
+/// ## Enum Example
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(CustomDebug)]
+/// enum Response {
+///     Success { data: String },
+///     Error {
+///         message: String,
+///         #[debug(skip)]
+///         internal_code: u32,
+///     },
+/// }
+/// ```
+///
+/// # Parameters
+/// - `input`: The input token stream representing the Rust item (struct, enum, etc.)
+///   for which the Debug implementation will be generated.
+///
+/// # Returns
+/// - `TokenStream`: The generated `std::fmt::Debug` implementation for the type
+///   that respects the `#[debug(skip)]` attribute.
+#[proc_macro_derive(CustomDebug, attributes(debug))]
+pub fn custom_debug(input: TokenStream) -> TokenStream {
+    inner_custom_debug(input)
+}

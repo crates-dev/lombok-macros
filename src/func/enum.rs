@@ -3,11 +3,13 @@
 /// # Variants
 /// - `Get`: Represents a getter function.
 /// - `Set`: Represents a setter function.
+/// - `Debug`: Represents a debug function.
 /// - `Unknown`: Represents an unknown or unspecified function type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FuncType {
     Get,
     GetMut,
     Set,
+    Debug,
     Unknown,
 }
