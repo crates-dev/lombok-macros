@@ -122,7 +122,7 @@ fn main() {
 
 ### Macro expansion result
 
-```rs
+```rust
 #![feature(prelude_import)]
 #![allow(warnings)]
 #[prelude_import]
