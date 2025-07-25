@@ -8,7 +8,7 @@
 [![](https://github.com/eastspire/lombok-macros/workflows/Rust/badge.svg)](https://github.com/eastspire/lombok-macros/actions?query=workflow:Rust)
 [![](https://img.shields.io/crates/l/lombok-macros.svg)](./LICENSE)
 
-<center>
+</center>
 
 [Official Documentation](https://docs.ltpp.vip/lombok-macros/)
 
