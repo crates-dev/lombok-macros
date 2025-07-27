@@ -1,4 +1,10 @@
-use proc_macro::TokenStream;
+//! lombok-macros
+//!
+//! A Rust procedural macro collection providing Lombok-like functionality.
+//! Automatically generates getters/setters with field-level visibility control,
+//! custom Debug implementations with field skipping, and Display trait implementations.
+//! Supports structs, enums, generics and lifetimes.
+
 pub(crate) mod cfg;
 pub(crate) mod func;
 pub(crate) mod generate;
@@ -11,11 +17,10 @@ pub(crate) use generate::*;
 pub(crate) use parse::*;
 pub(crate) use visibility::*;
 
-pub(crate) use proc_macro::TokenStream as OldTokenStream;
-pub(crate) use proc_macro2::{TokenStream as NewTokenStream, TokenTree as NewTokenTree};
+pub(crate) use proc_macro::TokenStream;
+pub(crate) use proc_macro2::{TokenStream as TokenStream2, TokenTree as TokenTree2};
 pub(crate) use quote::{ToTokens, format_ident, quote};
-pub(crate) use std::collections::HashMap;
-pub(crate) use std::str::FromStr;
+pub(crate) use std::{collections::HashMap, str::FromStr};
 pub(crate) use syn::{
     Data, DeriveInput, Field,
     GenericParam::{self},

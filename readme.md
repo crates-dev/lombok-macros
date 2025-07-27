@@ -14,7 +14,7 @@
 
 [Api Docs](https://docs.rs/lombok-macros/latest/lombok_macros/)
 
-> A collection of procedural macros for Lombok-like functionality in Rust.
+> A Rust procedural macro collection providing Lombok-like functionality. Automatically generates getters/setters with field-level visibility control, custom Debug implementations with field skipping, and Display trait implementations. Supports structs, enums, generics and lifetimes.
 
 ## Installation
 

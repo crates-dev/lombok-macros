@@ -7,8 +7,8 @@ impl Visibility {
     /// - `self`: The reference to the `Visibility` instance being converted.
     ///
     /// # Returns
-    /// - A `NewTokenStream` representing the corresponding visibility modifier in Rust syntax.
-    pub fn to_token_stream(&self) -> NewTokenStream {
+    /// - A `TokenStream2` representing the corresponding visibility modifier in Rust syntax.
+    pub fn to_token_stream(&self) -> TokenStream2 {
         match self {
             Visibility::Public => quote! { pub },
             Visibility::PublicCrate => quote! { pub(crate) },

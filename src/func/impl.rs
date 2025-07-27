@@ -1,14 +1,27 @@
 use crate::*;
 
+/// Provides default implementation for FuncType.
 impl Default for FuncType {
+    /// Returns the default value for FuncType, which is Unknown.
     fn default() -> Self {
         Self::Unknown
     }
 }
 
+/// Implements the `FromStr` trait for `FuncType` to parse string representations into `FuncType` variants.
 impl FromStr for FuncType {
     type Err = String;
 
+    /// Parses a string slice into a `FuncType`.
+    ///
+    /// # Arguments
+    ///
+    /// - `s`: The string slice to parse.
+    ///
+    /// # Returns
+    ///
+    /// - `Result<FuncType, String>`: Ok containing the `FuncType` if parsing is successful,
+    ///   or an Err containing a String error message if parsing fails.
     fn from_str(s: &str) -> Result<FuncType, std::string::String> {
         match s {
             GET => Ok(FuncType::Get),
@@ -24,7 +37,7 @@ impl FuncType {
     /// Checks if the `FuncType` is `Get`.
     ///
     /// # Parameters
-    /// - `self`: The reference to the `FuncType` instance.
+    /// - `self` - The reference to the `FuncType` instance.
     ///
     /// # Returns
     /// - `true` if the `FuncType` is `Get`; otherwise, `false`.
@@ -35,7 +48,7 @@ impl FuncType {
     /// Checks if the `FuncType` is `GetMut`.
     ///
     /// # Parameters
-    /// - `self`: The reference to the `FuncType` instance.
+    /// - `self` - The reference to the `FuncType` instance.
     ///
     /// # Returns
     /// - `true` if the `FuncType` is `GetMut`; otherwise, `false`.
@@ -46,7 +59,7 @@ impl FuncType {
     /// Checks if the `FuncType` is `Set`.
     ///
     /// # Parameters
-    /// - `self`: The reference to the `FuncType` instance.
+    /// - `self` - The reference to the `FuncType` instance.
     ///
     /// # Returns
     /// - `true` if the `FuncType` is `Set`; otherwise, `false`.
@@ -57,7 +70,7 @@ impl FuncType {
     /// Checks if the `FuncType` is `Debug`.
     ///
     /// # Parameters
-    /// - `self`: The reference to the `FuncType` instance.
+    /// - `self` - The reference to the `FuncType` instance.
     ///
     /// # Returns
     /// - `true` if the `FuncType` is `Debug`; otherwise, `false`.
@@ -68,7 +81,7 @@ impl FuncType {
     /// Checks if the `FuncType` is `Unknown`.
     ///
     /// # Parameters
-    /// - `self`: The reference to the `FuncType` instance.
+    /// - `self` - The reference to the `FuncType` instance.
     ///
     /// # Returns
     /// - `true` if the `FuncType` is `Unknown`; otherwise, `false`.
@@ -79,10 +92,10 @@ impl FuncType {
     /// Checks if the `FuncType` is `Unknown`.
     ///
     /// # Parameters
-    /// - `self`: The reference to the `FuncType` instance.
+    /// - `func_type_str`: The string slice representing the function type to check.
     ///
     /// # Returns
-    /// - `true` if the `FuncType` is `Unknown`; otherwise, `false`.
+    /// - `true` if the `FuncType` parsed from the string is not `Unknown`; otherwise, `false`.
     pub fn is_known(func_type_str: &str) -> bool {
         let func_type: FuncType = func_type_str.parse::<FuncType>().unwrap_or_default();
         func_type != Self::Unknown

@@ -3,15 +3,15 @@ use crate::*;
 /// Parses the provided token stream and modifies the given configuration.
 ///
 /// # Parameters
-/// - `tokens`: A `NewTokenStream` containing the tokens to be parsed.
+/// - `tokens`: A `TokenStream2` containing the tokens to be parsed.
 /// - `cfg`: A mutable reference to the `Cfg` structure that will be modified based on the parsed tokens.
 ///
 /// # Returns
 /// - The function does not return a value. It modifies the provided `cfg` in place.
-pub fn parse_tokens(tokens: NewTokenStream, cfg: &mut Cfg) {
+pub fn parse_tokens(tokens: TokenStream2, cfg: &mut Cfg) {
     for token in tokens {
         match token {
-            NewTokenTree::Ident(ident) => {
+            TokenTree2::Ident(ident) => {
                 let ident_str: String = ident.to_string();
                 if FuncType::is_known(&ident_str) {
                     if cfg.func_type.is_unknown() {
@@ -29,7 +29,7 @@ pub fn parse_tokens(tokens: NewTokenStream, cfg: &mut Cfg) {
                     cfg.visibility = Visibility::PublicSuper;
                 }
             }
-            NewTokenTree::Group(group) => {
+            TokenTree2::Group(group) => {
                 parse_tokens(group.stream(), cfg);
             }
             _ => {}
@@ -40,11 +40,11 @@ pub fn parse_tokens(tokens: NewTokenStream, cfg: &mut Cfg) {
 /// Analyzes the given token stream and returns a configuration based on the attributes found.
 ///
 /// # Parameters
-/// - `tokens`: A `NewTokenStream` containing the tokens representing the attributes to be analyzed.
+/// - `tokens`: A `TokenStream2` containing the tokens representing the attributes to be analyzed.
 ///
 /// # Returns
 /// - A `Cfg` structure representing the parsed configuration based on the attributes in the token stream.
-pub fn analyze_attributes(tokens: NewTokenStream) -> Cfg {
+pub fn analyze_attributes(tokens: TokenStream2) -> Cfg {
     let mut cfg: Cfg = Cfg::default();
     parse_tokens(tokens, &mut cfg);
     cfg
