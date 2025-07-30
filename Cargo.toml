@@ -1,6 +1,6 @@
 [package]
 name = "lombok-macros"
-version = "1.13.4"
+version = "1.13.5"
 edition = "2024"
 authors = ["root@ltpp.vip"]
 license = "MIT"
