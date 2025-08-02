@@ -1,13 +1,13 @@
 [package]
 name = "lombok-macros"
-version = "1.13.8"
+version = "1.13.9"
 readme = "README.md"
 edition = "2024"
 authors = ["root@ltpp.vip"]
 license = "MIT"
 description = """A Rust procedural macro collection providing Lombok-like functionality. Automatically generates getters/setters with field-level visibility control, custom Debug implementations with field skipping, and Display trait implementations. Supports structs, enums, generics and lifetimes."""
 keywords = ["proc-macro", "get-set", "macros", "lombok", "code-generation"]
-repository = "https://github.com/eastspire/lombok-macros.git"
+repository = "https://github.com/crates-dev/lombok-macros.git"
 categories = ["development-tools"]
 exclude = [
     "target",

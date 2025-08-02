@@ -5,7 +5,7 @@
 [![](https://img.shields.io/crates/v/lombok-macros.svg)](https://crates.io/crates/lombok-macros)
 [![](https://img.shields.io/crates/d/lombok-macros.svg)](https://img.shields.io/crates/d/lombok-macros.svg)
 [![](https://docs.rs/lombok-macros/badge.svg)](https://docs.rs/lombok-macros)
-[![](https://github.com/eastspire/lombok-macros/workflows/Rust/badge.svg)](https://github.com/eastspire/lombok-macros/actions?query=workflow:Rust)
+[![](https://github.com/crates-dev/lombok-macros/workflows/Rust/badge.svg)](https://github.com/crates-dev/lombok-macros/actions?query=workflow:Rust)
 [![](https://img.shields.io/crates/l/lombok-macros.svg)](./LICENSE)
 
 </center>
