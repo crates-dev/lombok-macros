@@ -24,6 +24,7 @@ impl Visibility {
     ///
     /// # Returns
     /// - `true` if the visibility is `Public`; otherwise, `false`.
+    #[inline]
     pub fn is_public(&self) -> bool {
         *self == Self::Public
     }
