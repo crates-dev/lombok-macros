@@ -79,7 +79,7 @@ fn generate_named_getter_setter(
     for attr in &field.attrs {
         let cfg: Cfg = analyze_attributes(attr.to_token_stream());
         let name: String = field.ident.to_token_stream().to_string();
-        cfg_map.entry(name).or_insert_with(Vec::new).push(cfg);
+        cfg_map.entry(name).or_default().push(cfg);
     }
     let get_quote = |vis: TokenStream2| {
         if need_getter {
@@ -121,7 +121,7 @@ fn generate_named_getter_setter(
     let mut has_add_get: bool = false;
     let mut has_add_get_mut: bool = false;
     let mut has_add_set: bool = false;
-    for (_key, cfg_list) in &cfg_map {
+    for cfg_list in cfg_map.values() {
         for cfg in cfg_list {
             if has_add_get && has_add_set && has_add_get_mut {
                 break;
@@ -196,7 +196,7 @@ fn generate_tuple_getter_setter(
     for attr in &field.attrs {
         let cfg: Cfg = analyze_attributes(attr.to_token_stream());
         let name: String = index.to_string();
-        cfg_map.entry(name).or_insert_with(Vec::new).push(cfg);
+        cfg_map.entry(name).or_default().push(cfg);
     }
     let get_quote = |vis: TokenStream2| {
         if need_getter {
@@ -238,7 +238,7 @@ fn generate_tuple_getter_setter(
     let mut has_add_get: bool = false;
     let mut has_add_get_mut: bool = false;
     let mut has_add_set: bool = false;
-    for (_key, cfg_list) in &cfg_map {
+    for cfg_list in cfg_map.values() {
         for cfg in cfg_list {
             if has_add_get && has_add_set && has_add_get_mut {
                 break;
