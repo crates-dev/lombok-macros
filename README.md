@@ -176,7 +176,7 @@ impl<'a, T: Clone + Debug> LombokTest<'a, T> {
 #[automatically_derived]
 impl<'a, T: ::core::fmt::Debug + Clone + Debug> ::core::fmt::Debug
 for LombokTest<'a, T> {
-    #[inline]
+    #[inline(always)]
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         ::core::fmt::Formatter::debug_struct_field3_finish(
             f,
@@ -193,7 +193,7 @@ for LombokTest<'a, T> {
 #[automatically_derived]
 impl<'a, T: ::core::clone::Clone + Clone + Debug> ::core::clone::Clone
 for LombokTest<'a, T> {
-    #[inline]
+    #[inline(always)]
     fn clone(&self) -> LombokTest<'a, T> {
         LombokTest {
             list: ::core::clone::Clone::clone(&self.list),
@@ -256,7 +256,7 @@ impl TupleStruct {
 }
 #[automatically_derived]
 impl ::core::fmt::Debug for TupleStruct {
-    #[inline]
+    #[inline(always)]
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         ::core::fmt::Formatter::debug_tuple_field3_finish(
             f,
@@ -269,7 +269,7 @@ impl ::core::fmt::Debug for TupleStruct {
 }
 #[automatically_derived]
 impl ::core::clone::Clone for TupleStruct {
-    #[inline]
+    #[inline(always)]
     fn clone(&self) -> TupleStruct {
         TupleStruct(
             ::core::clone::Clone::clone(&self.0),

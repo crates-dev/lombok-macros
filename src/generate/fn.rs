@@ -84,7 +84,7 @@ fn generate_named_getter_setter(
     let get_quote = |vis: TokenStream2| {
         if need_getter {
             quote! {
-                #[inline]
+                #[inline(always)]
                 #vis fn #get_name(&self) -> &#attr_ty {
                     &self.#attr_name_ident
                 }
@@ -96,7 +96,7 @@ fn generate_named_getter_setter(
     let get_mut_quote = |vis: TokenStream2| {
         if need_getter_mut {
             quote! {
-                #[inline]
+                #[inline(always)]
                 #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
                     &mut self.#attr_name_ident
                 }
@@ -108,7 +108,7 @@ fn generate_named_getter_setter(
     let set_quote = |vis: TokenStream2| {
         if need_setter {
             quote! {
-                #[inline]
+                #[inline(always)]
                 #vis fn #set_name(&mut self, val: #attr_ty) -> &mut Self {
                     self.#attr_name_ident = val;
                     self
@@ -201,7 +201,7 @@ fn generate_tuple_getter_setter(
     let get_quote = |vis: TokenStream2| {
         if need_getter {
             quote! {
-                #[inline]
+                #[inline(always)]
                 #vis fn #get_name(&self) -> &#attr_ty {
                     &self.#field_index
                 }
@@ -213,7 +213,7 @@ fn generate_tuple_getter_setter(
     let get_mut_quote = |vis: TokenStream2| {
         if need_getter_mut {
             quote! {
-                #[inline]
+                #[inline(always)]
                 #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
                     &mut self.#field_index
                 }
@@ -225,7 +225,7 @@ fn generate_tuple_getter_setter(
     let set_quote = |vis: TokenStream2| {
         if need_setter {
             quote! {
-                #[inline]
+                #[inline(always)]
                 #vis fn #set_name(&mut self, val: #attr_ty) -> &mut Self {
                     self.#field_index = val;
                     self
