@@ -3,6 +3,7 @@ use crate::*;
 /// Provides default implementation for FuncType.
 impl Default for FuncType {
     /// Returns the default value for FuncType, which is Unknown.
+    #[inline(always)]
     fn default() -> Self {
         Self::Unknown
     }
@@ -22,6 +23,7 @@ impl FromStr for FuncType {
     ///
     /// - `Result<FuncType, String>`: Ok containing the `FuncType` if parsing is successful,
     ///   or an Err containing a String error message if parsing fails.
+    #[inline(always)]
     fn from_str(s: &str) -> Result<FuncType, std::string::String> {
         match s {
             GET => Ok(FuncType::Get),

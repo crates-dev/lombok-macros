@@ -7,6 +7,7 @@ impl Default for Cfg {
     /// # Returns
     ///
     /// - `Cfg` - A new `Cfg` instance with default values.
+    #[inline(always)]
     fn default() -> Self {
         Self {
             func_type: FuncType::Unknown,
