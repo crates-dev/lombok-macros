@@ -1,6 +1,6 @@
 [package]
 name = "lombok-macros"
-version = "1.13.15"
+version = "1.13.16"
 readme = "README.md"
 edition = "2024"
 authors = ["root@ltpp.vip"]
@@ -9,13 +9,7 @@ description = """A Rust procedural macro collection providing Lombok-like functi
 keywords = ["proc-macro", "get-set", "macros", "lombok", "code-generation"]
 repository = "https://github.com/crates-dev/lombok-macros.git"
 categories = ["development-tools"]
-exclude = [
-    "target",
-    "Cargo.lock",
-    "sh",
-    ".github",
-    "debug"
-]
+exclude = ["target", "Cargo.lock", "sh", ".github", "debug"]
 
 [dependencies]
 proc-macro2 = "1.0.103"
