@@ -149,16 +149,16 @@ impl<'a, T: Clone + Debug> LombokTest<'a, T> {
         self.list = val;
         self
     }
-    pub fn get_mut_list(&mut self) -> &mut Vec<String> {
+    pub(crate) fn get_mut_list(&mut self) -> &mut Vec<String> {
         &mut self.list
     }
     pub(crate) fn get_opt_value(&self) -> &Option<&'a T> {
         &self.opt_value
     }
-    pub fn get_mut_opt_value(&mut self) -> &mut Option<&'a T> {
+    pub(crate) fn get_mut_opt_value(&mut self) -> &mut Option<&'a T> {
         &mut self.opt_value
     }
-    pub fn set_opt_value(&mut self, val: Option<&'a T>) -> &mut Self {
+    pub(crate) fn set_opt_value(&mut self, val: Option<&'a T>) -> &mut Self {
         self.opt_value = val;
         self
     }
@@ -169,7 +169,7 @@ impl<'a, T: Clone + Debug> LombokTest<'a, T> {
         self.name = val;
         self
     }
-    pub fn get_name(&self) -> &String {
+    pub(crate) fn get_name(&self) -> &String {
         &self.name
     }
 }
@@ -223,34 +223,34 @@ impl std::fmt::Debug for User {
 }
 struct TupleStruct(#[get(pub)] String, #[set(pub)] i32, #[get(pub)] #[set(pub)] bool);
 impl TupleStruct {
-    pub fn get_0(&self) -> &String {
+    pub(crate) fn get_0(&self) -> &String {
         &self.0
     }
-    pub fn get_mut_0(&mut self) -> &mut String {
+    pub(crate) fn get_mut_0(&mut self) -> &mut String {
         &mut self.0
     }
-    pub fn set_0(&mut self, val: String) -> &mut Self {
+    pub(crate) fn set_0(&mut self, val: String) -> &mut Self {
         self.0 = val;
         self
     }
-    pub fn set_1(&mut self, val: i32) -> &mut Self {
+    pub(crate) fn set_1(&mut self, val: i32) -> &mut Self {
         self.1 = val;
         self
     }
-    pub fn get_1(&self) -> &i32 {
+    pub(crate) fn get_1(&self) -> &i32 {
         &self.1
     }
-    pub fn get_mut_1(&mut self) -> &mut i32 {
+    pub(crate) fn get_mut_1(&mut self) -> &mut i32 {
         &mut self.1
     }
-    pub fn get_2(&self) -> &bool {
+    pub(crate) fn get_2(&self) -> &bool {
         &self.2
     }
-    pub fn set_2(&mut self, val: bool) -> &mut Self {
+    pub(crate) fn set_2(&mut self, val: bool) -> &mut Self {
         self.2 = val;
         self
     }
-    pub fn get_mut_2(&mut self) -> &mut bool {
+    pub(crate) fn get_mut_2(&mut self) -> &mut bool {
         &mut self.2
     }
 }

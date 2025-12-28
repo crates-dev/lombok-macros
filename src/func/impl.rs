@@ -44,7 +44,7 @@ impl FuncType {
     /// # Returns
     /// - `true` if the `FuncType` is `Get`; otherwise, `false`.
     #[inline(always)]
-    pub fn is_get(&self) -> bool {
+    pub(crate) fn is_get(&self) -> bool {
         *self == FuncType::Get
     }
 
@@ -56,7 +56,7 @@ impl FuncType {
     /// # Returns
     /// - `true` if the `FuncType` is `GetMut`; otherwise, `false`.
     #[inline(always)]
-    pub fn is_get_mut(&self) -> bool {
+    pub(crate) fn is_get_mut(&self) -> bool {
         *self == FuncType::GetMut
     }
 
@@ -68,7 +68,7 @@ impl FuncType {
     /// # Returns
     /// - `true` if the `FuncType` is `Set`; otherwise, `false`.
     #[inline(always)]
-    pub fn is_set(&self) -> bool {
+    pub(crate) fn is_set(&self) -> bool {
         *self == FuncType::Set
     }
 
@@ -80,7 +80,7 @@ impl FuncType {
     /// # Returns
     /// - `true` if the `FuncType` is `Debug`; otherwise, `false`.
     #[inline(always)]
-    pub fn is_debug(&self) -> bool {
+    pub(crate) fn is_debug(&self) -> bool {
         *self == FuncType::Debug
     }
 
@@ -92,7 +92,7 @@ impl FuncType {
     /// # Returns
     /// - `true` if the `FuncType` is `Unknown`; otherwise, `false`.
     #[inline(always)]
-    pub fn is_unknown(&self) -> bool {
+    pub(crate) fn is_unknown(&self) -> bool {
         *self == Self::Unknown
     }
 
@@ -104,7 +104,7 @@ impl FuncType {
     /// # Returns
     /// - `true` if the `FuncType` parsed from the string is not `Unknown`; otherwise, `false`.
     #[inline(always)]
-    pub fn is_known(func_type_str: &str) -> bool {
+    pub(crate) fn is_known(func_type_str: &str) -> bool {
         let func_type: FuncType = func_type_str.parse::<FuncType>().unwrap_or_default();
         func_type != Self::Unknown
     }

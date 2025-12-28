@@ -10,7 +10,7 @@ use crate::{func::*, visibility::*};
 /// - `skip`: A boolean flag indicating whether the function should be skipped during processing.
 /// - `visibility`: A `Visibility` that defines the visibility of the function.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Cfg {
+pub(crate) struct Config {
     /// A `FuncType` that specifies the function type.
     pub(crate) func_type: FuncType,
     /// A boolean flag indicating whether the function should be skipped during processing.

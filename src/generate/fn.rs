@@ -31,7 +31,7 @@ fn get_clean_attr_name(attr_str: &str) -> String {
 /// # Returns
 ///
 /// - `TokenStream2` - The generated getter and setter functions.
-pub fn generate_getter_setter(
+pub(crate) fn generate_getter_setter(
     field: &Field,
     field_index: Option<usize>,
     need_getter: bool,
@@ -75,11 +75,11 @@ fn generate_named_getter_setter(
     let get_mut_name: Ident = format_ident!("{}{}", GET_MUT_METHOD_PREFIX, clean_attr_name);
     let set_name: Ident = format_ident!("{}{}", SET_METHOD_PREFIX, clean_attr_name);
     let mut generated: TokenStream2 = quote! {};
-    let mut cfg_map: HashMap<String, Vec<Cfg>> = HashMap::new();
+    let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
     for attr in &field.attrs {
-        let cfg: Cfg = analyze_attributes(attr.to_token_stream());
+        let config: Config = analyze_attributes(attr.to_token_stream());
         let name: String = field.ident.to_token_stream().to_string();
-        cfg_map.entry(name).or_default().push(cfg);
+        config_map.entry(name).or_default().push(config);
     }
     let get_quote = |vis: TokenStream2| {
         if need_getter {
@@ -121,29 +121,29 @@ fn generate_named_getter_setter(
     let mut has_add_get: bool = false;
     let mut has_add_get_mut: bool = false;
     let mut has_add_set: bool = false;
-    for cfg_list in cfg_map.values() {
-        for cfg in cfg_list {
+    for config_list in config_map.values() {
+        for config in config_list {
             if has_add_get && has_add_set && has_add_get_mut {
                 break;
             }
-            if cfg.skip && cfg.func_type.is_unknown() {
+            if config.skip && config.func_type.is_unknown() {
                 continue;
             }
-            let vis: TokenStream2 = cfg.visibility.to_token_stream();
-            if cfg.func_type.is_get() {
-                if !cfg.skip && !has_add_get {
+            let vis: TokenStream2 = config.visibility.to_token_stream();
+            if config.func_type.is_get() {
+                if !config.skip && !has_add_get {
                     generated.extend(get_quote(vis.clone()));
                 }
                 has_add_get = true;
             }
-            if cfg.func_type.is_get_mut() {
-                if !cfg.skip && !has_add_get_mut {
+            if config.func_type.is_get_mut() {
+                if !config.skip && !has_add_get_mut {
                     generated.extend(get_mut_quote(vis.clone()));
                 }
                 has_add_get_mut = true;
             }
-            if cfg.func_type.is_set() {
-                if !cfg.skip && !has_add_set {
+            if config.func_type.is_set() {
+                if !config.skip && !has_add_set {
                     generated.extend(set_quote(vis.clone()));
                 }
                 has_add_set = true;
@@ -151,8 +151,8 @@ fn generate_named_getter_setter(
         }
     }
     if !has_add_get || !has_add_set || !has_add_get_mut {
-        let cfg: Cfg = Cfg::default();
-        let vis: TokenStream2 = cfg.visibility.to_token_stream();
+        let config: Config = Config::default();
+        let vis: TokenStream2 = config.visibility.to_token_stream();
         if !has_add_get {
             generated.extend(get_quote(vis.clone()));
         }
@@ -192,11 +192,11 @@ fn generate_tuple_getter_setter(
     let set_name: Ident = format_ident!("{}{}", SET_METHOD_PREFIX, index);
     let field_index: syn::Index = syn::Index::from(index);
     let mut generated: TokenStream2 = quote! {};
-    let mut cfg_map: HashMap<String, Vec<Cfg>> = HashMap::new();
+    let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
     for attr in &field.attrs {
-        let cfg: Cfg = analyze_attributes(attr.to_token_stream());
+        let config: Config = analyze_attributes(attr.to_token_stream());
         let name: String = index.to_string();
-        cfg_map.entry(name).or_default().push(cfg);
+        config_map.entry(name).or_default().push(config);
     }
     let get_quote = |vis: TokenStream2| {
         if need_getter {
@@ -238,29 +238,29 @@ fn generate_tuple_getter_setter(
     let mut has_add_get: bool = false;
     let mut has_add_get_mut: bool = false;
     let mut has_add_set: bool = false;
-    for cfg_list in cfg_map.values() {
-        for cfg in cfg_list {
+    for config_list in config_map.values() {
+        for config in config_list {
             if has_add_get && has_add_set && has_add_get_mut {
                 break;
             }
-            if cfg.skip && cfg.func_type.is_unknown() {
+            if config.skip && config.func_type.is_unknown() {
                 continue;
             }
-            let vis: TokenStream2 = cfg.visibility.to_token_stream();
-            if cfg.func_type.is_get() {
-                if !cfg.skip && !has_add_get {
+            let vis: TokenStream2 = config.visibility.to_token_stream();
+            if config.func_type.is_get() {
+                if !config.skip && !has_add_get {
                     generated.extend(get_quote(vis.clone()));
                 }
                 has_add_get = true;
             }
-            if cfg.func_type.is_get_mut() {
-                if !cfg.skip && !has_add_get_mut {
+            if config.func_type.is_get_mut() {
+                if !config.skip && !has_add_get_mut {
                     generated.extend(get_mut_quote(vis.clone()));
                 }
                 has_add_get_mut = true;
             }
-            if cfg.func_type.is_set() {
-                if !cfg.skip && !has_add_set {
+            if config.func_type.is_set() {
+                if !config.skip && !has_add_set {
                     generated.extend(set_quote(vis.clone()));
                 }
                 has_add_set = true;
@@ -268,8 +268,8 @@ fn generate_tuple_getter_setter(
         }
     }
     if !has_add_get || !has_add_set || !has_add_get_mut {
-        let cfg: Cfg = Cfg::default();
-        let vis: TokenStream2 = cfg.visibility.to_token_stream();
+        let config: Config = Config::default();
+        let vis: TokenStream2 = config.visibility.to_token_stream();
         if !has_add_get {
             generated.extend(get_quote(vis.clone()));
         }
@@ -295,7 +295,7 @@ fn generate_tuple_getter_setter(
 /// # Returns
 ///
 /// - `TokenStream` - The transformed tokens with `Lombok`-style data code.
-pub fn inner_lombok_data(
+pub(crate) fn inner_lombok_data(
     input: TokenStream,
     need_getter: bool,
     need_getter_mut: bool,
@@ -365,7 +365,7 @@ pub fn inner_lombok_data(
                 .collect::<Vec<_>>(),
             syn::Fields::Unit => Vec::new(),
         },
-        _ => panic!("{}", UNSUPPORTED_LOMBOK_DERIVE),
+        _ => panic!("{}", UNSUPPORTED_DATA_DERIVE),
     };
     let expanded: TokenStream2 = if lifetimes.is_empty() {
         if type_bounds.is_empty() {
@@ -448,7 +448,7 @@ pub(super) fn inner_display(input: TokenStream, is_format: bool) -> TokenStream 
 /// # Returns
 ///
 /// - `TokenStream` - The generated `Display` implementation.
-pub fn inner_display_debug(input: TokenStream) -> TokenStream {
+pub(crate) fn inner_display_debug(input: TokenStream) -> TokenStream {
     inner_display(input, false)
 }
 
@@ -461,7 +461,7 @@ pub fn inner_display_debug(input: TokenStream) -> TokenStream {
 /// # Returns
 ///
 /// - `TokenStream` - The generated `Display` implementation.
-pub fn inner_display_debug_format(input: TokenStream) -> TokenStream {
+pub(crate) fn inner_display_debug_format(input: TokenStream) -> TokenStream {
     inner_display(input, true)
 }
 
@@ -474,7 +474,7 @@ pub fn inner_display_debug_format(input: TokenStream) -> TokenStream {
 /// # Returns
 ///
 /// - `TokenStream` - The generated `Debug` implementation.
-pub fn inner_custom_debug(input: TokenStream) -> TokenStream {
+pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input as DeriveInput);
     let name: &Ident = &input.ident;
     let generics: &syn::Generics = &input.generics;
@@ -490,8 +490,8 @@ pub fn inner_custom_debug(input: TokenStream) -> TokenStream {
                             let field_name: &Ident = field.ident.as_ref()?;
                             let mut should_skip: bool = false;
                             for attr in &field.attrs {
-                                let cfg: Cfg = analyze_attributes(attr.to_token_stream());
-                                if cfg.func_type.is_debug() && cfg.skip {
+                                let config: Config = analyze_attributes(attr.to_token_stream());
+                                if config.func_type.is_debug() && config.skip {
                                     should_skip = true;
                                     break;
                                 }
@@ -525,8 +525,8 @@ pub fn inner_custom_debug(input: TokenStream) -> TokenStream {
                         .filter_map(|(i, field): (usize, &Field)| {
                             let mut should_skip: bool = false;
                             for attr in &field.attrs {
-                                let cfg: Cfg = analyze_attributes(attr.to_token_stream());
-                                if cfg.func_type.is_debug() && cfg.skip {
+                                let config: Config = analyze_attributes(attr.to_token_stream());
+                                if config.func_type.is_debug() && config.skip {
                                     should_skip = true;
                                     break;
                                 }
@@ -590,8 +590,9 @@ pub fn inner_custom_debug(input: TokenStream) -> TokenStream {
                                     let field_name: &Ident = field.ident.as_ref()?;
                                     let mut should_skip: bool = false;
                                     for attr in &field.attrs {
-                                        let cfg: Cfg = analyze_attributes(attr.to_token_stream());
-                                        if cfg.func_type.is_debug() && cfg.skip {
+                                        let config: Config =
+                                            analyze_attributes(attr.to_token_stream());
+                                        if config.func_type.is_debug() && config.skip {
                                             should_skip = true;
                                             break;
                                         }
@@ -631,8 +632,9 @@ pub fn inner_custom_debug(input: TokenStream) -> TokenStream {
                                 .filter_map(|(i, field): (usize, &Field)| {
                                     let mut should_skip: bool = false;
                                     for attr in &field.attrs {
-                                        let cfg: Cfg = analyze_attributes(attr.to_token_stream());
-                                        if cfg.func_type.is_debug() && cfg.skip {
+                                        let config: Config =
+                                            analyze_attributes(attr.to_token_stream());
+                                        if config.func_type.is_debug() && config.skip {
                                             should_skip = true;
                                             break;
                                         }

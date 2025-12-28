@@ -7,7 +7,7 @@
 /// - `Debug`: Represents a debug function.
 /// - `Unknown`: Represents an unknown or unspecified function type.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FuncType {
+pub(crate) enum FuncType {
     /// Represents a getter function.
     Get,
     /// Represents a mutable getter function.
