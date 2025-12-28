@@ -1,14 +1,5 @@
 use crate::*;
 
-/// Provides default implementation for FuncType.
-impl Default for FuncType {
-    /// Returns the default value for FuncType, which is Unknown.
-    #[inline(always)]
-    fn default() -> Self {
-        Self::Unknown
-    }
-}
-
 /// Implements the `FromStr` trait for `FuncType` to parse string representations into `FuncType` variants.
 impl FromStr for FuncType {
     type Err = String;
