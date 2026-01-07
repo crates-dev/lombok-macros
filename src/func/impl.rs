@@ -21,6 +21,7 @@ impl FromStr for FuncType {
             GET_MUT => Ok(FuncType::GetMut),
             SET => Ok(FuncType::Set),
             DEBUG => Ok(FuncType::Debug),
+            NEW => Ok(FuncType::New),
             _ => Ok(FuncType::Unknown),
         }
     }
@@ -73,6 +74,18 @@ impl FuncType {
     #[inline(always)]
     pub(crate) fn is_debug(&self) -> bool {
         *self == FuncType::Debug
+    }
+
+    /// Checks if the `FuncType` is `New`.
+    ///
+    /// # Parameters
+    /// - `self` - The reference to the `FuncType` instance.
+    ///
+    /// # Returns
+    /// - `true` if the `FuncType` is `New`; otherwise, `false`.
+    #[inline(always)]
+    pub(crate) fn is_new(&self) -> bool {
+        *self == FuncType::New
     }
 
     /// Checks if the `FuncType` is `Unknown`.

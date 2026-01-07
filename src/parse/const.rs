@@ -10,6 +10,9 @@ pub const SET: &str = "set";
 /// Constant for the "debug" attribute.
 pub const DEBUG: &str = "debug";
 
+/// Constant for the "new" function type.
+pub const NEW: &str = "new";
+
 /// Constant for the "skip" attribute.
 pub const SKIP: &str = "skip";
 

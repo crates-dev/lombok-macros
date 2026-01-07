@@ -18,7 +18,9 @@ pub(crate) use parse::*;
 pub(crate) use visibility::*;
 
 pub(crate) use proc_macro::TokenStream;
-pub(crate) use proc_macro2::{TokenStream as TokenStream2, TokenTree as TokenTree2};
+pub(crate) use proc_macro2::{
+    TokenStream as TokenStream2, TokenTree as TokenTree2, token_stream::IntoIter,
+};
 pub(crate) use quote::{ToTokens, format_ident, quote};
 pub(crate) use std::{collections::HashMap, str::FromStr};
 pub(crate) use syn::{
@@ -163,9 +165,25 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///     }
 /// }
 /// ```
-#[proc_macro_derive(Data, attributes(set, get, get_mut))]
+#[proc_macro_derive(Data, attributes(set, get, get_mut, new))]
 pub fn data(input: TokenStream) -> TokenStream {
-    inner_lombok_data(input, true, true, true)
+    let mut result: TokenStream2 = TokenStream2::new();
+    let lombok_data: TokenStream = inner_lombok_data(input.clone(), true, true, true);
+    result.extend(
+        lombok_data
+            .to_string()
+            .parse::<TokenStream2>()
+            .unwrap_or_default(),
+    );
+    let derive_input: DeriveInput = parse_macro_input!(input as DeriveInput);
+    let new_constructor: TokenStream = inner_new_constructor(&derive_input, Visibility::Public);
+    result.extend(
+        new_constructor
+            .to_string()
+            .parse::<TokenStream2>()
+            .unwrap_or_default(),
+    );
+    result.into()
 }
 
 /// A procedural macro that implements the `std::fmt::Display` trait for a type,
@@ -235,8 +253,8 @@ pub fn display_debug_format(input: TokenStream) -> TokenStream {
 ///     password: "secret123".to_string(),
 ///     email: "alice@example.com".to_string(),
 /// };
-/// println!("{:?}", user);
-/// // Output: User { name: "Alice", email: "alice@example.com" }
+/// let expected_debug = "User { name: \"Alice\", email: \"alice@example.com\" }";
+/// assert_eq!(format!("{:?}", user), expected_debug);
 /// ```
 ///
 /// ## Enum Example
@@ -252,6 +270,13 @@ pub fn display_debug_format(input: TokenStream) -> TokenStream {
 ///         internal_code: u32,
 ///     },
 /// }
+///
+/// let success = Response::Success { data: "Hello".to_string() };
+/// let error = Response::Error { message: "Failed".to_string(), internal_code: 500 };
+/// let expected_success = "Success { data: \"Hello\" }";
+/// let expected_error = "Error { message: \"Failed\" }";
+/// assert_eq!(format!("{:?}", success), expected_success);
+/// assert_eq!(format!("{:?}", error), expected_error);
 /// ```
 ///
 /// # Parameters
@@ -264,4 +289,80 @@ pub fn display_debug_format(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(CustomDebug, attributes(debug))]
 pub fn custom_debug(input: TokenStream) -> TokenStream {
     inner_custom_debug(input)
+}
+
+/// A procedural macro that generates a constructor function for structs.
+///
+/// This macro automatically generates a `new` function that takes all non-skipped fields
+/// as parameters and returns a new instance of the struct. Fields marked with `#[new(skip)]`
+/// will be initialized with their default values.
+///
+/// # Supported Attributes
+/// - `#[new(skip)]`: Excludes the field from constructor parameters and uses default initialization
+/// - `#[new(pub)]`: Generates a public constructor  
+/// - `#[new(pub(crate))]`: Generates a crate-visible constructor  
+/// - `#[new(pub(super))]`: Generates a constructor visible to parent module  
+/// - `#[new(private)]`: Generates a private constructor
+///
+/// # Default Behavior
+/// - The generated constructor is `pub` by default
+/// - All fields are included in the constructor unless marked with `#[new(skip)]`
+/// - Skipped fields are initialized using `Default::default()`
+///
+/// # Examples
+///
+/// ## Basic Usage
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(New)]
+/// struct Person {
+///     name: String,
+///     age: u32,
+/// }
+///
+/// let person = Person::new("Alice".to_string(), 30);
+/// assert_eq!(person.name, "Alice");
+/// assert_eq!(person.age, 30);
+/// ```
+///
+/// ## With Skip Attribute
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(New)]
+/// struct User {
+///     username: String,
+///     email: String,
+///     #[new(skip)]
+///     created_at: String,
+/// }
+///
+/// let user = User::new("alice".to_string(), "alice@example.com".to_string());
+/// assert_eq!(user.username, "alice");
+/// assert_eq!(user.email, "alice@example.com");
+/// assert_eq!(user.created_at, ""); // skipped field defaults to empty string
+/// ```
+///
+/// ## With Visibility Control
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(New)]
+/// #[new(pub(crate))]
+/// struct InternalStruct {
+///     value: i32,
+/// }
+/// ```
+///
+/// # Parameters
+/// - `input`: The input token stream representing the struct for which to generate the constructor.
+///
+/// # Returns
+/// - `TokenStream`: The generated constructor implementation.
+#[proc_macro_derive(New, attributes(new))]
+pub fn new(input: TokenStream) -> TokenStream {
+    let derive_input: DeriveInput = parse_macro_input!(input as DeriveInput);
+    let visibility: Visibility = parse_new_visibility(&derive_input);
+    inner_new_constructor(&derive_input, visibility)
 }

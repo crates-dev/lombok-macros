@@ -12,3 +12,6 @@ pub(crate) const SET_METHOD_PREFIX: &str = "set_";
 
 /// Error message indicating that #[derive(Data)] is only supported for structs.
 pub(crate) const UNSUPPORTED_DATA_DERIVE: &str = "#[derive(Data)] is only supported for structs.";
+
+/// Error message indicating that #[derive(New)] is only supported for structs.
+pub(crate) const UNSUPPORTED_NEW_DERIVE: &str = "#[derive(New)] is only supported for structs.";

@@ -683,3 +683,174 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
         }
     }
 }
+
+/// Checks if a field should be skipped for New constructor generation.
+///
+/// # Arguments
+///
+/// - `&Field` - The field structure to analyze for skip attribute.
+///
+/// # Returns
+///
+/// - `bool` - True if the field should be skipped, false otherwise.
+fn should_skip_field_for_new(field: &Field) -> bool {
+    // Check if field has #[new(skip)] attribute
+    let mut should_skip: bool = false;
+    for attr in &field.attrs {
+        let config: Config = analyze_attributes(attr.to_token_stream());
+        if config.func_type.is_new() && config.skip {
+            should_skip = true;
+            break;
+        }
+    }
+    should_skip
+}
+
+/// Generates a constructor function for named struct fields, excluding skipped fields.
+///
+/// # Arguments
+///
+/// - `&Field` - The field structure to analyze for constructor generation.
+///
+/// # Returns
+///
+/// - `Option<(Ident, Type)>` - The field name and type if not skipped, None if skipped.
+fn analyze_named_field_for_new(field: &Field) -> Option<(Ident, Type)> {
+    if should_skip_field_for_new(field) {
+        return None;
+    }
+    let field_name: &Ident = field.ident.as_ref()?;
+    let field_type: &Type = &field.ty;
+    Some((field_name.clone(), field_type.clone()))
+}
+
+/// Generates a constructor function for tuple struct fields, excluding skipped fields.
+///
+/// # Arguments
+///
+/// - `&Field` - The field structure to analyze for constructor generation.
+/// - `usize` - The index of the field in the tuple.
+///
+/// # Returns
+///
+/// - `Option<(Ident, Type)>` - The generated parameter name and field type if not skipped, None if skipped.
+fn analyze_tuple_field_for_new(field: &Field, index: usize) -> Option<(Ident, Type)> {
+    if should_skip_field_for_new(field) {
+        return None;
+    }
+    let field_type: &Type = &field.ty;
+    let param_name: Ident = format_ident!("field_{}", index);
+    Some((param_name, field_type.clone()))
+}
+
+/// Generates a constructor function for a struct with the specified visibility.
+///
+/// # Arguments
+///
+/// - `&DeriveInput` - The derive input representing the struct.
+/// - `Visibility` - The visibility for the generated constructor function.
+///
+/// # Returns
+///
+/// - `TokenStream` - The generated constructor implementation.
+pub(crate) fn inner_new_constructor(input: &DeriveInput, visibility: Visibility) -> TokenStream {
+    let name: &Ident = &input.ident;
+    let generics: &syn::Generics = &input.generics;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let fields_info: Vec<(Ident, Type)> = match &input.data {
+        Data::Struct(data_struct) => match &data_struct.fields {
+            syn::Fields::Named(named_fields) => named_fields
+                .named
+                .iter()
+                .filter_map(analyze_named_field_for_new)
+                .collect(),
+            syn::Fields::Unnamed(unnamed_fields) => unnamed_fields
+                .unnamed
+                .iter()
+                .enumerate()
+                .filter_map(|(index, field)| analyze_tuple_field_for_new(field, index))
+                .collect(),
+            syn::Fields::Unit => Vec::new(),
+        },
+        _ => panic!("{}", UNSUPPORTED_NEW_DERIVE),
+    };
+    let tuple_field_mapping: Vec<(syn::Index, Ident)> = match &input.data {
+        Data::Struct(data_struct) => match &data_struct.fields {
+            syn::Fields::Unnamed(unnamed_fields) => unnamed_fields
+                .unnamed
+                .iter()
+                .enumerate()
+                .filter_map(|(index, field)| {
+                    if !should_skip_field_for_new(field) {
+                        let param_name: Ident = format_ident!("field_{}", index);
+                        Some((syn::Index::from(index), param_name))
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+            _ => Vec::new(),
+        },
+        _ => Vec::new(),
+    };
+    let params: Vec<TokenStream2> = fields_info
+        .iter()
+        .map(|(field_name, field_type)| {
+            quote! { #field_name: #field_type }
+        })
+        .collect();
+    let constructor_fields: TokenStream2 = match &input.data {
+        Data::Struct(data_struct) => match &data_struct.fields {
+            syn::Fields::Named(_) => {
+                let field_initializers: Vec<TokenStream2> = data_struct
+                    .fields
+                    .iter()
+                    .filter_map(|field| {
+                        let original_name: &Ident = field.ident.as_ref()?;
+                        if !should_skip_field_for_new(field) {
+                            Some(quote! { #original_name: #original_name })
+                        } else {
+                            Some(quote! { #original_name: Default::default() })
+                        }
+                    })
+                    .collect();
+                quote! { { #(#field_initializers),* } }
+            }
+            syn::Fields::Unnamed(_) => {
+                let field_initializers: Vec<TokenStream2> = data_struct
+                    .fields
+                    .iter()
+                    .enumerate()
+                    .map(|(index, field)| {
+                        let field_index: syn::Index = syn::Index::from(index);
+                        if !should_skip_field_for_new(field) {
+                            if let Some((_, param_name)) = tuple_field_mapping
+                                .iter()
+                                .find(|(idx, _)| *idx == field_index)
+                            {
+                                quote! { #param_name }
+                            } else {
+                                quote! { Default::default() }
+                            }
+                        } else {
+                            quote! { Default::default() }
+                        }
+                    })
+                    .collect();
+                quote! { ( #(#field_initializers),* ) }
+            }
+            syn::Fields::Unit => quote! { {} },
+        },
+        _ => panic!("{}", UNSUPPORTED_NEW_DERIVE),
+    };
+    let vis_tokens: TokenStream2 = visibility.to_token_stream();
+    let expanded: TokenStream2 = quote! {
+        impl #impl_generics #name #ty_generics #where_clause {
+            #[inline(always)]
+            #vis_tokens fn new(#(#params),*) -> Self {
+                Self #constructor_fields
+            }
+        }
+    };
+    expanded.into()
+}
