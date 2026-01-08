@@ -165,7 +165,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///     }
 /// }
 /// ```
-#[proc_macro_derive(Data, attributes(set, get, get_mut, new))]
+#[proc_macro_derive(Data, attributes(get, get_mut, set))]
 pub fn data(input: TokenStream) -> TokenStream {
     let mut result: TokenStream2 = TokenStream2::new();
     let lombok_data: TokenStream = inner_lombok_data(input.clone(), true, true, true);

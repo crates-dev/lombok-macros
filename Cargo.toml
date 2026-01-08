@@ -1,6 +1,6 @@
 [package]
 name = "lombok-macros"
-version = "1.15.5"
+version = "1.15.6"
 readme = "README.md"
 edition = "2024"
 authors = ["root@ltpp.vip"]
