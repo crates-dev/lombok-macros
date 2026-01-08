@@ -175,14 +175,6 @@ pub fn data(input: TokenStream) -> TokenStream {
             .parse::<TokenStream2>()
             .unwrap_or_default(),
     );
-    let derive_input: DeriveInput = parse_macro_input!(input as DeriveInput);
-    let new_constructor: TokenStream = inner_new_constructor(&derive_input, Visibility::Public);
-    result.extend(
-        new_constructor
-            .to_string()
-            .parse::<TokenStream2>()
-            .unwrap_or_default(),
-    );
     result.into()
 }
 

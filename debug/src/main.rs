@@ -70,7 +70,7 @@ struct PrivatePerson {
     _age: u32,
 }
 
-#[derive(Data)]
+#[derive(Data, New)]
 #[new(private)]
 struct Product {
     id: u64,
