@@ -846,6 +846,7 @@ pub(crate) fn inner_new_constructor(input: &DeriveInput, visibility: Visibility)
     let vis_tokens: TokenStream2 = visibility.to_token_stream();
     let expanded: TokenStream2 = quote! {
         impl #impl_generics #name #ty_generics #where_clause {
+            #[allow(clippy::too_many_arguments)]
             #[inline(always)]
             #vis_tokens fn new(#(#params),*) -> Self {
                 Self #constructor_fields
