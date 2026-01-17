@@ -142,6 +142,33 @@ pub(crate) use syn::{
 /// assert_eq!(field1, vec![1, 2, 3]);
 /// ```
 ///
+/// ## Copy Return Type
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Getter, Clone)]
+/// struct CopyStruct {
+///     #[get(pub, copy)]
+///     value: i32,
+///     #[get(pub, copy)]
+///     flag: bool,
+///     #[get(pub, copy)]
+///     count: u64,
+/// }
+/// let copy_struct = CopyStruct {
+///     value: 42,
+///     flag: true,
+///     count: 1000,
+/// };
+/// let copied_value: i32 = copy_struct.get_value();
+/// let copied_flag: bool = copy_struct.get_flag();
+/// let copied_count: u64 = copy_struct.get_count();
+/// assert_eq!(copied_value, 42);
+/// assert_eq!(copied_flag, true);
+/// assert_eq!(copied_count, 1000);
+/// ```
+///
 /// ## Deref Return Type with Enhanced Match Control
 ///
 /// ```rust
