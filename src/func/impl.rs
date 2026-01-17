@@ -113,3 +113,50 @@ impl FuncType {
         func_type != Self::Unknown
     }
 }
+
+impl Default for TraitType {
+    /// Returns the default trait type (None).
+    ///
+    /// # Returns
+    ///
+    /// - `TraitType` - The default trait type (None).
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+impl FromStr for TraitType {
+    type Err = ();
+
+    /// Parses a string into a TraitType.
+    ///
+    /// # Arguments
+    ///
+    /// - `s` - The string to parse.
+    ///
+    /// # Returns
+    ///
+    /// - `Result<TraitType, ()>` - The parsed trait type or an error.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "AsRef" => Ok(Self::AsRef),
+            "Into" => Ok(Self::Into),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TraitType {
+    /// Checks if the given string is a known trait type.
+    ///
+    /// # Arguments
+    ///
+    /// - `s` - The string to check.
+    ///
+    /// # Returns
+    ///
+    /// - `bool` - true if the string is a known trait type, false otherwise.
+    pub(crate) fn is_known(s: &str) -> bool {
+        matches!(s, "AsRef" | "Into")
+    }
+}

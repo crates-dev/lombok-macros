@@ -34,6 +34,18 @@ struct TupleStruct(
 );
 
 #[derive(Data, Debug, Clone)]
+struct TraitTestStruct {
+    #[set(pub, AsRef)]
+    name: String,
+    #[set(pub, Into)]
+    value: i32,
+    #[set(pub, AsRef)]
+    data: Vec<u8>,
+    #[set(pub, Into)]
+    items: Vec<String>,
+}
+
+#[derive(Data, Debug, Clone)]
 struct TupleWithResult(#[get(pub)] String, #[get(pub)] Result<i32, &'static str>);
 
 #[derive(CustomDebug)]
@@ -171,4 +183,15 @@ fn main() {
     let private_person = PrivatePerson::new("Charlie".to_string(), 45);
     assert_eq!(private_person._name, "Charlie");
     assert_eq!(private_person._age, 45);
+    let mut trait_test = TraitTestStruct {
+        name: "test".to_string(),
+        value: 42,
+        data: vec![1, 2, 3],
+        items: vec!["item1".to_string(), "item2".to_string()],
+    };
+    trait_test.set_name("new name");
+    trait_test.set_value(100);
+    trait_test.set_data(&[4, 5, 6, 7]);
+    let new_items = vec!["new1".to_string(), "new2".to_string()];
+    trait_test.set_items(new_items);
 }

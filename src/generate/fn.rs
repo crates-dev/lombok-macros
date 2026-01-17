@@ -62,6 +62,92 @@ fn is_result_type(ty: &Type) -> bool {
     }
 }
 
+/// Checks if a type is a String type.
+///
+/// # Arguments
+///
+/// - `&Type` - The type to check.
+///
+/// # Returns
+///
+/// - `bool` - true if the type is String, false otherwise.
+fn is_string_type(ty: &Type) -> bool {
+    match ty {
+        Type::Path(type_path) => {
+            if let Some(segment) = type_path.path.segments.last() {
+                segment.ident == "String"
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
+/// Checks if a type is a Vec<T> type.
+///
+/// # Arguments
+///
+/// - `&Type` - The type to check.
+///
+/// # Returns
+///
+/// - `bool` - true if the type is Vec<T>, false otherwise.
+fn is_vec_type(ty: &Type) -> bool {
+    match ty {
+        Type::Path(type_path) => {
+            if let Some(segment) = type_path.path.segments.last() {
+                segment.ident == "Vec"
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
+/// Generates the appropriate parameter type based on the field type and trait type.
+///
+/// # Arguments
+///
+/// - `&Type` - The original field type.
+/// - `TraitType` - The trait type to use for parameter conversion.
+///
+/// # Returns
+///
+/// - `TokenStream2` - The generated parameter type as tokens.
+fn generate_param_type(field_type: &Type, trait_type: TraitType) -> TokenStream2 {
+    match trait_type {
+        TraitType::AsRef => {
+            // Special handling for common types
+            if is_string_type(field_type) {
+                quote! { impl AsRef<str> }
+            } else if is_vec_type(field_type) {
+                // For Vec<T>, we want AsRef<[T]>
+                if let Type::Path(type_path) = field_type {
+                    if let Some(segment) = type_path.path.segments.last() {
+                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                            if let Some(GenericArgument::Type(inner_ty)) = args.args.first() {
+                                return quote! { impl AsRef<[#inner_ty]> };
+                            }
+                        }
+                    }
+                }
+                quote! { impl AsRef<[u8]> }
+            } else {
+                // For other types, use AsRef<T>
+                quote! { impl AsRef<#field_type> }
+            }
+        }
+        TraitType::Into => {
+            quote! { impl Into<#field_type> }
+        }
+        TraitType::None => {
+            quote! { #field_type }
+        }
+    }
+}
+
 /// Generates getter and setter functions for a given struct field.
 ///
 /// # Arguments
@@ -148,7 +234,7 @@ fn generate_named_getter_setter(
                 quote! {
                     #[inline(always)]
                     #vis fn #get_name(&self) -> #inner_ty {
-                        self.#attr_name_ident.unwrap()
+                        self.#attr_name_ident.clone().unwrap()
                     }
                 }
             } else if is_result_type(attr_ty) {
@@ -172,7 +258,7 @@ fn generate_named_getter_setter(
                 quote! {
                     #[inline(always)]
                     #vis fn #get_name(&self) -> #inner_ty {
-                        self.#attr_name_ident.unwrap()
+                        self.#attr_name_ident.clone().unwrap()
                     }
                 }
             } else {
@@ -213,12 +299,18 @@ fn generate_named_getter_setter(
             quote! {}
         }
     };
-    let set_quote = |vis: TokenStream2| {
+    let set_quote = |vis: TokenStream2, trait_type: TraitType| {
         if need_setter {
+            let param_type = generate_param_type(attr_ty, trait_type);
+            let assignment = match trait_type {
+                TraitType::AsRef => quote! { self.#attr_name_ident = val.as_ref().to_owned(); },
+                TraitType::Into => quote! { self.#attr_name_ident = val.into(); },
+                TraitType::None => quote! { self.#attr_name_ident = val; },
+            };
             quote! {
                 #[inline(always)]
-                #vis fn #set_name(&mut self, val: #attr_ty) -> &mut Self {
-                    self.#attr_name_ident = val;
+                #vis fn #set_name(&mut self, val: #param_type) -> &mut Self {
+                    #assignment
                     self
                 }
             }
@@ -255,7 +347,7 @@ fn generate_named_getter_setter(
             }
             if config.func_type.is_set() {
                 if !config.skip && !has_add_set {
-                    generated.extend(set_quote(vis.clone()));
+                    generated.extend(set_quote(vis.clone(), config.trait_type));
                 }
                 has_add_set = true;
             }
@@ -271,7 +363,7 @@ fn generate_named_getter_setter(
             generated.extend(get_mut_quote(vis.clone()));
         }
         if !has_add_set {
-            generated.extend(set_quote(vis.clone()));
+            generated.extend(set_quote(vis.clone(), TraitType::None));
         }
     }
     generated
@@ -332,7 +424,7 @@ fn generate_tuple_getter_setter(
                 quote! {
                     #[inline(always)]
                     #vis fn #get_name(&self) -> #inner_ty {
-                        self.#field_index.unwrap()
+                        self.#field_index.clone().unwrap()
                     }
                 }
             } else if is_result_type(attr_ty) {
@@ -356,7 +448,7 @@ fn generate_tuple_getter_setter(
                 quote! {
                     #[inline(always)]
                     #vis fn #get_name(&self) -> #inner_ty {
-                        self.#field_index.unwrap()
+                        self.#field_index.clone().unwrap()
                     }
                 }
             } else {
@@ -398,12 +490,18 @@ fn generate_tuple_getter_setter(
             quote! {}
         }
     };
-    let set_quote = |vis: TokenStream2| {
+    let set_quote = |vis: TokenStream2, trait_type: TraitType| {
         if need_setter {
+            let param_type = generate_param_type(attr_ty, trait_type);
+            let assignment = match trait_type {
+                TraitType::AsRef => quote! { self.#field_index = val.as_ref().to_owned(); },
+                TraitType::Into => quote! { self.#field_index = val.into(); },
+                TraitType::None => quote! { self.#field_index = val; },
+            };
             quote! {
                 #[inline(always)]
-                #vis fn #set_name(&mut self, val: #attr_ty) -> &mut Self {
-                    self.#field_index = val;
+                #vis fn #set_name(&mut self, val: #param_type) -> &mut Self {
+                    #assignment
                     self
                 }
             }
@@ -440,7 +538,7 @@ fn generate_tuple_getter_setter(
             }
             if config.func_type.is_set() {
                 if !config.skip && !has_add_set {
-                    generated.extend(set_quote(vis.clone()));
+                    generated.extend(set_quote(vis.clone(), config.trait_type));
                 }
                 has_add_set = true;
             }
@@ -456,7 +554,7 @@ fn generate_tuple_getter_setter(
             generated.extend(get_mut_quote(vis.clone()));
         }
         if !has_add_set {
-            generated.extend(set_quote(vis.clone()));
+            generated.extend(set_quote(vis.clone(), TraitType::None));
         }
     }
     generated

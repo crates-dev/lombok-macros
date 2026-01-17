@@ -23,3 +23,22 @@ pub(crate) enum FuncType {
     #[default]
     Unknown,
 }
+
+/// Represents the different trait types that can be used for setter parameters.
+///
+/// This enum defines the trait types that can be specified as parameters
+/// for setter methods to enable more flexible type conversions.
+///
+/// # Variants
+/// - `AsRef`: Uses `AsRef<T>` trait for parameter conversion.
+/// - `Into`: Uses `Into<T>` trait for parameter conversion.
+/// - `None`: No trait conversion (default behavior).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TraitType {
+    /// Uses `AsRef<T>` trait for parameter conversion.
+    AsRef,
+    /// Uses `Into<T>` trait for parameter conversion.
+    Into,
+    /// No trait conversion (default behavior).
+    None,
+}

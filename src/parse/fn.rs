@@ -17,6 +17,8 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                     if config.func_type.is_unknown() {
                         config.func_type = ident_str.parse::<FuncType>().unwrap_or_default();
                     }
+                } else if TraitType::is_known(&ident_str) {
+                    config.trait_type = ident_str.parse::<TraitType>().unwrap_or_default();
                 } else if ident_str == SKIP {
                     config.skip = true;
                 } else if ident_str == PUBLIC {
