@@ -8,6 +8,8 @@ struct LombokTest<'a, T: Clone + Debug> {
     list: Vec<String>,
     #[get(pub(crate))]
     opt_value: Option<&'a T>,
+    #[get(pub(crate))]
+    result_value: Result<&'a T, &'static str>,
     #[get_mut(pub(crate))]
     #[set(private)]
     name: String,
@@ -30,6 +32,9 @@ struct TupleStruct(
     #[set(pub)]
     bool,
 );
+
+#[derive(Data, Debug, Clone)]
+struct TupleWithResult(#[get(pub)] String, #[get(pub)] Result<i32, &'static str>);
 
 #[derive(CustomDebug)]
 enum Response {
@@ -87,6 +92,7 @@ fn main() {
     let mut data: LombokTest<usize> = LombokTest {
         list: Vec::new(),
         opt_value: None,
+        result_value: Err("error"),
         name: "test".to_string(),
     };
     let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
@@ -99,6 +105,13 @@ fn main() {
     assert_eq!(try_opt_value, &Some(&42));
     let unwrap_value: &usize = data.get_opt_value();
     assert_eq!(unwrap_value, &42);
+    let result_value: &Result<&usize, &str> = data.try_get_result_value();
+    assert_eq!(*result_value, Err("error"));
+    data.set_result_value(Ok(&100));
+    let try_result_value: &Result<&usize, &str> = data.try_get_result_value();
+    assert_eq!(try_result_value, &Ok(&100));
+    let unwrap_result: &usize = data.get_result_value();
+    assert_eq!(unwrap_result, &100);
     let name_mut: &mut String = data.get_mut_name();
     *name_mut = "updated".to_string();
     assert!(!data.to_string().is_empty());
@@ -109,6 +122,14 @@ fn main() {
     let field2: &bool = tuple_data.get_2();
     assert!(*field2);
     tuple_data.set_2(false);
+    let mut tuple_result = TupleWithResult("test".to_string(), Err("error"));
+    let try_result: &String = tuple_result.get_0();
+    assert_eq!(*try_result, String::from("test"));
+    let try_result: &Result<i32, &str> = tuple_result.try_get_1();
+    assert_eq!(*try_result, Err("error"));
+    tuple_result.1 = Ok(42);
+    let unwrap_result: i32 = tuple_result.get_1();
+    assert_eq!(unwrap_result, 42);
     let user: User = User {
         name: "Alice".to_string(),
         _password: "secret123".to_string(),

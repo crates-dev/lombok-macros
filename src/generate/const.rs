@@ -10,6 +10,9 @@ pub(crate) const UNSUPPORTED_NEW_DERIVE: &str = "#[derive(New)] is only supporte
 /// The Option type identifier.
 pub(crate) const OPTION_TYPE: &str = "Option";
 
+/// The Result type identifier.
+pub(crate) const RESULT_TYPE: &str = "Result";
+
 /// Prefix for getter methods.
 pub(crate) const GET_METHOD_PREFIX: &str = "get_";
 

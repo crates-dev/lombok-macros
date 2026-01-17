@@ -40,6 +40,28 @@ fn is_option_type(ty: &Type) -> bool {
     }
 }
 
+/// Checks if a type is a Result<T, E> type.
+///
+/// # Arguments
+///
+/// - `&Type` - The type to check.
+///
+/// # Returns
+///
+/// - `bool` - true if the type is Result<T, E>, false otherwise.
+fn is_result_type(ty: &Type) -> bool {
+    match ty {
+        Type::Path(type_path) => {
+            if let Some(segment) = type_path.path.segments.last() {
+                segment.ident == RESULT_TYPE
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
 /// Generates getter and setter functions for a given struct field.
 ///
 /// # Arguments
@@ -106,6 +128,30 @@ fn generate_named_getter_setter(
     let get_quote = |vis: TokenStream2| {
         if need_getter {
             if is_option_type(attr_ty) {
+                let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
+                    if let Some(segment) = type_path.path.segments.last() {
+                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                quote! { #ty }
+                            } else {
+                                quote! { #attr_ty }
+                            }
+                        } else {
+                            quote! { #attr_ty }
+                        }
+                    } else {
+                        quote! { #attr_ty }
+                    }
+                } else {
+                    quote! { #attr_ty }
+                };
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #inner_ty {
+                        self.#attr_name_ident.unwrap()
+                    }
+                }
+            } else if is_result_type(attr_ty) {
                 let inner_ty = if let Type::Path(type_path) = attr_ty {
                     if let Some(segment) = type_path.path.segments.last() {
                         if let PathArguments::AngleBracketed(args) = &segment.arguments {
@@ -143,7 +189,7 @@ fn generate_named_getter_setter(
     };
 
     let try_get_quote = |vis: TokenStream2| {
-        if need_getter && is_option_type(attr_ty) {
+        if need_getter && (is_option_type(attr_ty) || is_result_type(attr_ty)) {
             let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
             quote! {
                 #[inline(always)]
@@ -195,7 +241,7 @@ fn generate_named_getter_setter(
             if config.func_type.is_get() {
                 if !config.skip && !has_add_get {
                     generated.extend(get_quote(vis.clone()));
-                    if is_option_type(attr_ty) {
+                    if is_option_type(attr_ty) || is_result_type(attr_ty) {
                         generated.extend(try_get_quote(vis.clone()));
                     }
                 }
@@ -266,6 +312,30 @@ fn generate_tuple_getter_setter(
     let get_quote = |vis: TokenStream2| {
         if need_getter {
             if is_option_type(attr_ty) {
+                let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
+                    if let Some(segment) = type_path.path.segments.last() {
+                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                quote! { #ty }
+                            } else {
+                                quote! { #attr_ty }
+                            }
+                        } else {
+                            quote! { #attr_ty }
+                        }
+                    } else {
+                        quote! { #attr_ty }
+                    }
+                } else {
+                    quote! { #attr_ty }
+                };
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #inner_ty {
+                        self.#field_index.unwrap()
+                    }
+                }
+            } else if is_result_type(attr_ty) {
                 let inner_ty = if let Type::Path(type_path) = attr_ty {
                     if let Some(segment) = type_path.path.segments.last() {
                         if let PathArguments::AngleBracketed(args) = &segment.arguments {
@@ -303,7 +373,7 @@ fn generate_tuple_getter_setter(
     };
 
     let try_get_quote = |vis: TokenStream2| {
-        if need_getter && is_option_type(attr_ty) {
+        if need_getter && (is_option_type(attr_ty) || is_result_type(attr_ty)) {
             let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
             quote! {
                 #[inline(always)]
@@ -356,7 +426,7 @@ fn generate_tuple_getter_setter(
             if config.func_type.is_get() {
                 if !config.skip && !has_add_get {
                     generated.extend(get_quote(vis.clone()));
-                    if is_option_type(attr_ty) {
+                    if is_option_type(attr_ty) || is_result_type(attr_ty) {
                         generated.extend(try_get_quote(vis.clone()));
                     }
                 }
