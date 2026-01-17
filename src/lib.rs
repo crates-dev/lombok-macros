@@ -369,7 +369,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// configurable visibility and behavior options.
 ///
 /// # Supported Attributes
-/// - `#[get(...)]`: Controls getter generation (supports `reference`, `clone` options)
+/// - `#[get(...)]`: Controls getter generation (supports `reference`, `clone`, `copy`, `deref` options)
 /// - `#[get_mut(...)]`: Controls mutable getter generation
 /// - `#[set(...)]`: Controls setter generation (supports `Into`, `AsRef` options)
 ///
@@ -395,20 +395,25 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///     #[get(pub, clone)]
 ///     #[set(pub, Into)]
 ///     email: String,
-///     #[get_mut(pub)]
+///     #[get(pub, copy)]
 ///     age: u32,
+///     #[get_mut(pub)]
+///     mutable_age: u32,
 /// }
 ///
 /// let mut user = User {
 ///     name: "Alice".to_string(),
 ///     email: "alice@example.com".to_string(),
 ///     age: 30,
+///     mutable_age: 25,
 /// };
 ///
 /// let name_reference: &String = user.get_name();
 /// let email_clone: String = user.get_email();
+/// let age_copy: u32 = user.get_age();
 /// assert_eq!(*name_reference, "Alice");
 /// assert_eq!(email_clone, "alice@example.com");
+/// assert_eq!(age_copy, 30);
 ///
 /// user.set_name("Bob".to_string());
 /// user.set_email("bob@example.com");
@@ -416,7 +421,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// let updated_email: String = user.get_email();
 /// assert_eq!(updated_email, "bob@example.com");
 ///
-/// let age_mutable_reference: &mut u32 = user.get_mut_age();
+/// let age_mutable_reference: &mut u32 = user.get_mut_mutable_age();
 /// *age_mutable_reference = 31;
 ///
 /// assert_eq!(*age_mutable_reference, 31);
