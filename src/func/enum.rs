@@ -42,3 +42,22 @@ pub(crate) enum TraitType {
     /// No trait conversion (default behavior).
     None,
 }
+
+/// Represents the return type behavior for getter methods.
+///
+/// This enum defines how getter methods should return values,
+/// controlling whether they return references, cloned values, or use default behavior.
+///
+/// # Variants
+/// - `Reference`: Returns a reference to the field value (`&T`).
+/// - `Clone`: Returns a cloned copy of the field value (`T`).
+/// - `Default`: Uses default behavior (reference for non-Option/Result, cloned for Option/Result).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ReturnType {
+    /// Returns a reference to the field value (`&T`).
+    Reference,
+    /// Returns a cloned copy of the field value (`T`).
+    Clone,
+    /// Uses default behavior (reference for non-Option/Result, cloned for Option/Result).
+    Default,
+}

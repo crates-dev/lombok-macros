@@ -27,3 +27,9 @@ pub const PUBLIC_CRATE: &str = "crate";
 
 /// Constant for super-level visibility.
 pub const PUBLIC_SUPER: &str = "super";
+
+/// Constant for return reference type.
+pub const REFERENCE: &str = "reference";
+
+/// Constant for return clone type.
+pub const CLONE: &str = "clone";

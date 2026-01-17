@@ -211,61 +211,81 @@ fn generate_named_getter_setter(
         let name: String = field.ident.to_token_stream().to_string();
         config_map.entry(name).or_default().push(config);
     }
-    let get_quote = |vis: TokenStream2| {
+    let get_quote = |vis: TokenStream2, return_type: ReturnType| {
         if need_getter {
-            if is_option_type(attr_ty) {
-                let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
-                    if let Some(segment) = type_path.path.segments.last() {
-                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
-                                quote! { #ty }
+            match return_type {
+                ReturnType::Reference => {
+                    quote! {
+                        #[inline(always)]
+                        #vis fn #get_name(&self) -> &#attr_ty {
+                            &self.#attr_name_ident
+                        }
+                    }
+                }
+                ReturnType::Clone => {
+                    quote! {
+                        #[inline(always)]
+                        #vis fn #get_name(&self) -> #attr_ty {
+                            self.#attr_name_ident.clone()
+                        }
+                    }
+                }
+                ReturnType::Default => {
+                    if is_option_type(attr_ty) {
+                        let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
+                            if let Some(segment) = type_path.path.segments.last() {
+                                if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                                    if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                        quote! { #ty }
+                                    } else {
+                                        quote! { #attr_ty }
+                                    }
+                                } else {
+                                    quote! { #attr_ty }
+                                }
                             } else {
                                 quote! { #attr_ty }
                             }
                         } else {
                             quote! { #attr_ty }
+                        };
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #inner_ty {
+                                self.#attr_name_ident.clone().unwrap()
+                            }
                         }
-                    } else {
-                        quote! { #attr_ty }
-                    }
-                } else {
-                    quote! { #attr_ty }
-                };
-                quote! {
-                    #[inline(always)]
-                    #vis fn #get_name(&self) -> #inner_ty {
-                        self.#attr_name_ident.clone().unwrap()
-                    }
-                }
-            } else if is_result_type(attr_ty) {
-                let inner_ty = if let Type::Path(type_path) = attr_ty {
-                    if let Some(segment) = type_path.path.segments.last() {
-                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
-                                quote! { #ty }
+                    } else if is_result_type(attr_ty) {
+                        let inner_ty = if let Type::Path(type_path) = attr_ty {
+                            if let Some(segment) = type_path.path.segments.last() {
+                                if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                                    if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                        quote! { #ty }
+                                    } else {
+                                        quote! { #attr_ty }
+                                    }
+                                } else {
+                                    quote! { #attr_ty }
+                                }
                             } else {
                                 quote! { #attr_ty }
                             }
                         } else {
                             quote! { #attr_ty }
+                        };
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #inner_ty {
+                                self.#attr_name_ident.clone().unwrap()
+                            }
                         }
                     } else {
-                        quote! { #attr_ty }
-                    }
-                } else {
-                    quote! { #attr_ty }
-                };
-                quote! {
-                    #[inline(always)]
-                    #vis fn #get_name(&self) -> #inner_ty {
-                        self.#attr_name_ident.clone().unwrap()
-                    }
-                }
-            } else {
-                quote! {
-                    #[inline(always)]
-                    #vis fn #get_name(&self) -> &#attr_ty {
-                        &self.#attr_name_ident
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> &#attr_ty {
+                                &self.#attr_name_ident
+                            }
+                        }
                     }
                 }
             }
@@ -332,7 +352,7 @@ fn generate_named_getter_setter(
             let vis: TokenStream2 = config.visibility.to_token_stream();
             if config.func_type.is_get() {
                 if !config.skip && !has_add_get {
-                    generated.extend(get_quote(vis.clone()));
+                    generated.extend(get_quote(vis.clone(), config.return_type));
                     if is_option_type(attr_ty) || is_result_type(attr_ty) {
                         generated.extend(try_get_quote(vis.clone()));
                     }
@@ -357,7 +377,7 @@ fn generate_named_getter_setter(
         let config: Config = Config::default();
         let vis: TokenStream2 = config.visibility.to_token_stream();
         if !has_add_get {
-            generated.extend(get_quote(vis.clone()));
+            generated.extend(get_quote(vis.clone(), config.return_type));
         }
         if !has_add_get_mut {
             generated.extend(get_mut_quote(vis.clone()));
@@ -401,61 +421,81 @@ fn generate_tuple_getter_setter(
         let name: String = index.to_string();
         config_map.entry(name).or_default().push(config);
     }
-    let get_quote = |vis: TokenStream2| {
+    let get_quote = |vis: TokenStream2, return_type: ReturnType| {
         if need_getter {
-            if is_option_type(attr_ty) {
-                let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
-                    if let Some(segment) = type_path.path.segments.last() {
-                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
-                                quote! { #ty }
+            match return_type {
+                ReturnType::Reference => {
+                    quote! {
+                        #[inline(always)]
+                        #vis fn #get_name(&self) -> &#attr_ty {
+                            &self.#field_index
+                        }
+                    }
+                }
+                ReturnType::Clone => {
+                    quote! {
+                        #[inline(always)]
+                        #vis fn #get_name(&self) -> #attr_ty {
+                            self.#field_index.clone()
+                        }
+                    }
+                }
+                ReturnType::Default => {
+                    if is_option_type(attr_ty) {
+                        let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
+                            if let Some(segment) = type_path.path.segments.last() {
+                                if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                                    if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                        quote! { #ty }
+                                    } else {
+                                        quote! { #attr_ty }
+                                    }
+                                } else {
+                                    quote! { #attr_ty }
+                                }
                             } else {
                                 quote! { #attr_ty }
                             }
                         } else {
                             quote! { #attr_ty }
+                        };
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #inner_ty {
+                                self.#field_index.clone().unwrap()
+                            }
                         }
-                    } else {
-                        quote! { #attr_ty }
-                    }
-                } else {
-                    quote! { #attr_ty }
-                };
-                quote! {
-                    #[inline(always)]
-                    #vis fn #get_name(&self) -> #inner_ty {
-                        self.#field_index.clone().unwrap()
-                    }
-                }
-            } else if is_result_type(attr_ty) {
-                let inner_ty = if let Type::Path(type_path) = attr_ty {
-                    if let Some(segment) = type_path.path.segments.last() {
-                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
-                                quote! { #ty }
+                    } else if is_result_type(attr_ty) {
+                        let inner_ty = if let Type::Path(type_path) = attr_ty {
+                            if let Some(segment) = type_path.path.segments.last() {
+                                if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                                    if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                        quote! { #ty }
+                                    } else {
+                                        quote! { #attr_ty }
+                                    }
+                                } else {
+                                    quote! { #attr_ty }
+                                }
                             } else {
                                 quote! { #attr_ty }
                             }
                         } else {
                             quote! { #attr_ty }
+                        };
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #inner_ty {
+                                self.#field_index.clone().unwrap()
+                            }
                         }
                     } else {
-                        quote! { #attr_ty }
-                    }
-                } else {
-                    quote! { #attr_ty }
-                };
-                quote! {
-                    #[inline(always)]
-                    #vis fn #get_name(&self) -> #inner_ty {
-                        self.#field_index.clone().unwrap()
-                    }
-                }
-            } else {
-                quote! {
-                    #[inline(always)]
-                    #vis fn #get_name(&self) -> &#attr_ty {
-                        &self.#field_index
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> &#attr_ty {
+                                &self.#field_index
+                            }
+                        }
                     }
                 }
             }
@@ -523,7 +563,7 @@ fn generate_tuple_getter_setter(
             let vis: TokenStream2 = config.visibility.to_token_stream();
             if config.func_type.is_get() {
                 if !config.skip && !has_add_get {
-                    generated.extend(get_quote(vis.clone()));
+                    generated.extend(get_quote(vis.clone(), config.return_type));
                     if is_option_type(attr_ty) || is_result_type(attr_ty) {
                         generated.extend(try_get_quote(vis.clone()));
                     }
@@ -548,7 +588,7 @@ fn generate_tuple_getter_setter(
         let config: Config = Config::default();
         let vis: TokenStream2 = config.visibility.to_token_stream();
         if !has_add_get {
-            generated.extend(get_quote(vis.clone()));
+            generated.extend(get_quote(vis.clone(), config.return_type));
         }
         if !has_add_get_mut {
             generated.extend(get_mut_quote(vis.clone()));

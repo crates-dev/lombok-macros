@@ -157,6 +157,64 @@ impl TraitType {
     ///
     /// - `bool` - true if the string is a known trait type, false otherwise.
     pub(crate) fn is_known(s: &str) -> bool {
-        matches!(s, "AsRef" | "Into")
+        matches!(s, "AsRef" | "Into" | "as_ref" | "into")
+    }
+}
+
+impl ReturnType {
+    /// Checks if the return type is `Default`.
+    ///
+    /// # Parameters
+    /// - `self` - The reference to the `ReturnType` instance.
+    ///
+    /// # Returns
+    /// - `true` if the return type is `Default`; otherwise, `false`.
+    #[inline(always)]
+    pub(crate) fn is_default(&self) -> bool {
+        *self == ReturnType::Default
+    }
+
+    /// Checks if the given string is a known return type.
+    ///
+    /// # Parameters
+    /// - `s` - The string to check.
+    ///
+    /// # Returns
+    /// - `true` if the string is a known return type; otherwise, `false`.
+    #[inline(always)]
+    pub(crate) fn is_known(s: &str) -> bool {
+        matches!(s, REFERENCE | CLONE)
+    }
+}
+
+impl Default for ReturnType {
+    /// Returns the default return type (`Default`).
+    ///
+    /// # Returns
+    /// - `ReturnType` - The default return type.
+    #[inline(always)]
+    fn default() -> Self {
+        ReturnType::Default
+    }
+}
+
+impl FromStr for ReturnType {
+    type Err = String;
+
+    /// Parses a string slice into a `ReturnType`.
+    ///
+    /// # Arguments
+    /// - `s`: The string slice to parse.
+    ///
+    /// # Returns
+    /// - `Result<ReturnType, String>`: Ok containing the `ReturnType` if parsing is successful,
+    ///   or an Err containing a String error message if parsing fails.
+    #[inline(always)]
+    fn from_str(s: &str) -> Result<ReturnType, std::string::String> {
+        match s {
+            REFERENCE => Ok(ReturnType::Reference),
+            CLONE => Ok(ReturnType::Clone),
+            _ => Ok(ReturnType::Default),
+        }
     }
 }

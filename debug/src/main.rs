@@ -37,6 +37,7 @@ struct TupleStruct(
 struct TraitTestStruct {
     #[set(pub, AsRef)]
     name: String,
+    #[get(clone)]
     #[set(pub, Into)]
     value: i32,
     #[set(pub, AsRef)]
@@ -105,7 +106,7 @@ struct NestedStruct {
     #[get(pub)]
     name: String,
     #[set(pub)]
-    value: i32,
+    _value: i32,
 }
 
 #[derive(Data, Debug, Clone)]
@@ -125,7 +126,7 @@ enum ComplexEnum {
     StructVariant {
         field1: String,
         #[debug(skip)]
-        secret: String,
+        _secret: String,
         value: f64,
     },
 }
@@ -149,20 +150,14 @@ struct LifetimesTest<'a, 'b> {
 struct EdgeCaseTest {
     #[get(pub)]
     empty_string: String,
-    #[get(pub)]
+    #[get(pub, clone)]
     empty_vec: Vec<i32>,
-    #[get(pub)]
+    #[get(pub, clone)]
     zero_value: i32,
-    #[get(pub)]
+    #[get(pub, clone)]
     bool_false: bool,
     #[get(pub)]
     option_none: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-struct PrivateFields {
-    pub public_field: String,
-    private_field: String,
 }
 
 #[derive(Data)]
@@ -278,7 +273,7 @@ fn main() {
     };
     trait_test.set_name("new name");
     trait_test.set_value(100);
-    trait_test.set_data(&[4, 5, 6, 7]);
+    trait_test.set_data([4, 5, 6, 7]);
     let new_items = vec!["new1".to_string(), "new2".to_string()];
     trait_test.set_items(new_items);
     assert_eq!(*trait_test.get_name(), "new name");
@@ -290,7 +285,7 @@ fn main() {
     );
     let nested = NestedStruct {
         name: "inner".to_string(),
-        value: 42,
+        _value: 42,
     };
     let mut complex = ComplexNestedStruct {
         nested: nested.clone(),
@@ -309,12 +304,12 @@ fn main() {
     let tuple = ComplexEnum::TupleVariant("test".to_string(), 123);
     let struct_variant = ComplexEnum::StructVariant {
         field1: "visible".to_string(),
-        secret: "hidden".to_string(),
+        _secret: "hidden".to_string(),
         value: 3.14,
     };
-    let simple_debug = format!("{:?}", simple);
-    let tuple_debug = format!("{:?}", tuple);
-    let struct_debug = format!("{:?}", struct_variant);
+    let simple_debug = format!("{simple:?}");
+    let tuple_debug = format!("{tuple:?}");
+    let struct_debug = format!("{struct_variant:?}");
     assert!(simple_debug.contains("SimpleVariant"));
     assert!(tuple_debug.contains("test"));
     assert!(tuple_debug.contains("123"));
@@ -346,7 +341,7 @@ fn main() {
     assert!(edge_case.get_empty_vec().is_empty());
     assert_eq!(edge_case.get_zero_value(), 0);
     assert!(!edge_case.get_bool_false());
-    assert!(edge_case.get_option_none().is_none());
+    assert!(edge_case.try_get_option_none().is_none());
     let unit_get = UnitGetSet { flag: true };
     let flag_ref = unit_get.get_flag();
     assert!(*flag_ref);
