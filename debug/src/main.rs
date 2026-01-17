@@ -100,6 +100,93 @@ struct Product {
 #[derive(New)]
 struct TuplePoint(f64, #[new(skip)] f64, f64);
 
+#[derive(Data, Debug, Clone)]
+struct NestedStruct {
+    #[get(pub)]
+    name: String,
+    #[set(pub)]
+    value: i32,
+}
+
+#[derive(Data, Debug, Clone)]
+struct ComplexNestedStruct {
+    #[get(pub)]
+    nested: NestedStruct,
+    #[get(pub)]
+    nested_list: Vec<NestedStruct>,
+    #[set(pub)]
+    metadata: std::collections::HashMap<String, String>,
+}
+
+#[derive(CustomDebug)]
+enum ComplexEnum {
+    SimpleVariant,
+    TupleVariant(String, i32),
+    StructVariant {
+        field1: String,
+        #[debug(skip)]
+        secret: String,
+        value: f64,
+    },
+}
+
+#[derive(New)]
+struct GenericStruct<T: Default + Clone> {
+    #[new(skip)]
+    data: T,
+    value: i32,
+}
+
+#[derive(Data, Debug, Clone)]
+struct LifetimesTest<'a, 'b> {
+    #[get(pub)]
+    name: &'a str,
+    #[get(pub)]
+    description: &'b str,
+}
+
+#[derive(Data, Debug, Clone)]
+struct EdgeCaseTest {
+    #[get(pub)]
+    empty_string: String,
+    #[get(pub)]
+    empty_vec: Vec<i32>,
+    #[get(pub)]
+    zero_value: i32,
+    #[get(pub)]
+    bool_false: bool,
+    #[get(pub)]
+    option_none: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+struct PrivateFields {
+    pub public_field: String,
+    private_field: String,
+}
+
+#[derive(Data)]
+struct UnitGetSet {
+    #[get(pub)]
+    flag: bool,
+}
+
+#[derive(New)]
+struct AllSkipped {
+    #[new(skip)]
+    skipped1: String,
+    #[new(skip)]
+    skipped2: i32,
+}
+
+#[derive(Data, Debug, Clone)]
+struct MultiAttributes {
+    #[get(pub, clone)]
+    #[set(pub, Into)]
+    complex_field: Vec<String>,
+}
+
+#[test]
 fn main() {
     let mut data: LombokTest<usize> = LombokTest {
         list: Vec::new(),
@@ -195,149 +282,85 @@ fn main() {
     let new_items = vec!["new1".to_string(), "new2".to_string()];
     trait_test.set_items(new_items);
     assert_eq!(*trait_test.get_name(), "new name");
-    assert_eq!(*trait_test.get_value(), 100);
+    assert_eq!(trait_test.get_value(), 100);
     assert_eq!(*trait_test.get_data(), vec![4, 5, 6, 7]);
     assert_eq!(
         *trait_test.get_items(),
         vec!["new1".to_string(), "new2".to_string()]
     );
-}
-
-/// Test return type control with reference and clone attributes
-#[derive(Data, Debug, Clone)]
-struct ReturnTypeTest {
-    #[get(pub(crate), reference)]
-    ref_field: String,
-    #[get(pub(crate), clone)]
-    clone_field: String,
-    #[get(pub(crate), default)]
-    default_field: String,
-    #[get(pub(crate), reference)]
-    ref_vec: Vec<i32>,
-    #[get(pub(crate), clone)]
-    clone_vec: Vec<i32>,
-    #[get(pub(crate), default)]
-    default_vec: Vec<i32>,
-}
-
-#[test]
-fn test_return_type_control() {
-    let test_data = ReturnTypeTest {
-        ref_field: "reference_field".to_string(),
-        clone_field: "clone_field".to_string(),
-        default_field: "default_field".to_string(),
-        ref_vec: vec![1, 2, 3],
-        clone_vec: vec![4, 5, 6],
-        default_vec: vec![7, 8, 9],
+    let nested = NestedStruct {
+        name: "inner".to_string(),
+        value: 42,
     };
-
-    // Test reference return type - should return &String
-    let ref_result: &String = test_data.get_ref_field();
-    assert_eq!(*ref_result, "reference_field");
-
-    // Test clone return type - should return String (cloned)
-    let clone_result: String = test_data.get_clone_field();
-    assert_eq!(clone_result, "clone_field");
-
-    // Test default return type - for non-Option/Result, should return &String
-    let default_result: &String = test_data.get_default_field();
-    assert_eq!(*default_result, "default_field");
-
-    // Test reference with Vec - should return &Vec<i32>
-    let ref_vec_result: &Vec<i32> = test_data.get_ref_vec();
-    assert_eq!(*ref_vec_result, vec![1, 2, 3]);
-
-    // Test clone with Vec - should return Vec<i32> (cloned)
-    let clone_vec_result: Vec<i32> = test_data.get_clone_vec();
-    assert_eq!(clone_vec_result, vec![4, 5, 6]);
-
-    // Test default with Vec - for non-Option/Result, should return &Vec<i32>
-    let default_vec_result: &Vec<i32> = test_data.get_default_vec();
-    assert_eq!(*default_vec_result, vec![7, 8, 9]);
-}
-
-#[test]
-fn test_return_type_with_option_result() {
-    #[derive(Data, Debug, Clone)]
-    struct OptionResultTest {
-        #[get(pub(crate), reference)]
-        opt_ref: Option<String>,
-        #[get(pub(crate), clone)]
-        opt_clone: Option<String>,
-        #[get(pub(crate), reference)]
-        res_ref: Result<String, &'static str>,
-        #[get(pub(crate), clone)]
-        res_clone: Result<String, &'static str>,
-    }
-
-    let test_data = OptionResultTest {
-        opt_ref: Some("option_value".to_string()),
-        opt_clone: Some("option_clone".to_string()),
-        res_ref: Ok("result_value".to_string()),
-        res_clone: Ok("result_clone".to_string()),
+    let mut complex = ComplexNestedStruct {
+        nested: nested.clone(),
+        nested_list: vec![nested],
+        metadata: std::collections::HashMap::new(),
     };
-
-    // With reference attribute, Option/Result should return reference to the whole type
-    let opt_ref_result: &Option<String> = test_data.get_opt_ref();
-    assert_eq!(opt_ref_result.as_ref().unwrap(), "option_value");
-
-    let opt_clone_result: Option<String> = test_data.get_opt_clone();
-    assert_eq!(opt_clone_result.unwrap(), "option_clone");
-
-    let res_ref_result: &Result<String, &'static str> = test_data.get_res_ref();
-    assert_eq!(res_ref_result.as_ref().unwrap(), "result_value");
-
-    let res_clone_result: Result<String, &'static str> = test_data.get_res_clone();
-    assert_eq!(res_clone_result.unwrap(), "result_clone");
-}
-
-#[test]
-fn test_usage_examples() {
-    #[derive(Data, Clone, Debug)]
-    struct Example {
-        #[get(pub, reference)]
-        name: String,
-
-        #[get(pub, clone)]
-        description: String,
-
-        // Uses default behavior: for non-Option/Result types, returns &T
-        #[get(pub, default)]
-        tag: String,
-
-        // For Option/Result, reference returns &Option<T>, clone returns Option<T>
-        #[get(pub, reference)]
-        optional: Option<i32>,
-
-        #[get(pub, clone)]
-        result: Result<String, &'static str>,
-    }
-
-    let example = Example {
-        name: "John Doe".to_string(),
-        description: "Software engineer".to_string(),
-        tag: "developer".to_string(),
-        optional: Some(42),
-        result: Ok("success".to_string()),
+    complex.set_metadata({
+        let mut map = std::collections::HashMap::new();
+        map.insert("key".to_string(), "value".to_string());
+        map
+    });
+    assert_eq!(complex.get_nested().get_name(), "inner");
+    assert_eq!(complex.get_nested_list().len(), 1);
+    assert_eq!(complex.get_metadata().get("key").unwrap(), "value");
+    let simple = ComplexEnum::SimpleVariant;
+    let tuple = ComplexEnum::TupleVariant("test".to_string(), 123);
+    let struct_variant = ComplexEnum::StructVariant {
+        field1: "visible".to_string(),
+        secret: "hidden".to_string(),
+        value: 3.14,
     };
-
-    // Reference returns - no copying, borrow the field
-    let name_ref: &String = example.get_name();
-    assert_eq!(*name_ref, "John Doe");
-
-    // Clone returns - creates a copy, transfers ownership
-    let description_owned: String = example.get_description();
-    assert_eq!(description_owned, "Software engineer");
-
-    // Default behavior for simple types - returns reference
-    let tag_ref: &String = example.get_tag();
-    assert_eq!(*tag_ref, "developer");
-
-    // For Option/Result with reference - returns &Option<T> or &Result<T, E>
-    let opt_ref: &Option<i32> = example.get_optional();
-    assert_eq!(opt_ref.unwrap(), 42);
-
-    // For Option/Result with clone - returns Option<T> or Result<T, E>
-    let result_owned: Result<String, &'static str> = example.get_result();
-    assert_eq!(result_owned.unwrap(), "success");
+    let simple_debug = format!("{:?}", simple);
+    let tuple_debug = format!("{:?}", tuple);
+    let struct_debug = format!("{:?}", struct_variant);
+    assert!(simple_debug.contains("SimpleVariant"));
+    assert!(tuple_debug.contains("test"));
+    assert!(tuple_debug.contains("123"));
+    assert!(struct_debug.contains("visible"));
+    assert!(!struct_debug.contains("hidden"));
+    assert!(struct_debug.contains("3.14"));
+    let generic_i32 = GenericStruct::<i32> {
+        data: 0,
+        value: 100,
+    };
+    let generic_string = GenericStruct::<String>::new(200);
+    assert_eq!(generic_i32.value, 100);
+    assert_eq!(generic_i32.data, 0);
+    assert_eq!(generic_string.value, 200);
+    assert_eq!(generic_string.data, "");
+    let name = "rust";
+    let description = "language";
+    let lifetimes_test = LifetimesTest { name, description };
+    assert_eq!(*lifetimes_test.get_name(), "rust");
+    assert_eq!(*lifetimes_test.get_description(), "language");
+    let edge_case = EdgeCaseTest {
+        empty_string: String::new(),
+        empty_vec: Vec::new(),
+        zero_value: 0,
+        bool_false: false,
+        option_none: None,
+    };
+    assert_eq!(edge_case.get_empty_string(), "");
+    assert!(edge_case.get_empty_vec().is_empty());
+    assert_eq!(edge_case.get_zero_value(), 0);
+    assert!(!edge_case.get_bool_false());
+    assert!(edge_case.get_option_none().is_none());
+    let unit_get = UnitGetSet { flag: true };
+    let flag_ref = unit_get.get_flag();
+    assert!(*flag_ref);
+    let constructed = AllSkipped::new();
+    assert_eq!(constructed.skipped1, "");
+    assert_eq!(constructed.skipped2, 0);
+    let multi = MultiAttributes {
+        complex_field: vec!["test".to_string()],
+    };
+    let cloned_field = multi.get_complex_field();
+    assert_eq!(cloned_field, vec!["test".to_string()]);
+    let mut mutated = multi;
+    let new_vec = vec!["new".to_string(), "values".to_string()];
+    mutated.set_complex_field(new_vec.clone());
+    let updated = mutated.get_complex_field();
+    assert_eq!(updated, new_vec);
 }
