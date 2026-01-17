@@ -371,21 +371,17 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///     age: 30,
 /// };
 ///
-/// // Using getters
 /// let name_reference: &String = user.get_name();
 /// let email_clone: String = user.get_email();
 /// assert_eq!(*name_reference, "Alice");
 /// assert_eq!(email_clone, "alice@example.com");
 ///
-/// // Using setters with trait conversion
 /// user.set_name("Bob".to_string());
 /// user.set_email("bob@example.com");
 ///
-/// // Verify setters worked
 /// let updated_email: String = user.get_email();
 /// assert_eq!(updated_email, "bob@example.com");
 ///
-/// // Using mutable getters
 /// let age_mutable_reference: &mut u32 = user.get_mut_age();
 /// *age_mutable_reference = 31;
 ///
