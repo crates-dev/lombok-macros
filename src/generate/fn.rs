@@ -746,7 +746,6 @@ fn generate_tuple_getter_setter(
             quote! {}
         }
     };
-
     let try_get_quote = |vis: TokenStream2| {
         if need_getter && (is_option_type(attr_ty) || is_result_type(attr_ty)) {
             let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
@@ -760,7 +759,6 @@ fn generate_tuple_getter_setter(
             quote! {}
         }
     };
-
     let get_mut_quote = |vis: TokenStream2| {
         if need_getter_mut {
             quote! {
