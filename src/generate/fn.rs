@@ -480,7 +480,6 @@ fn generate_named_getter_setter(
             quote! {}
         }
     };
-
     let try_get_quote = |vis: TokenStream2| {
         if need_getter && (is_option_type(attr_ty) || is_result_type(attr_ty)) {
             let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
@@ -565,6 +564,9 @@ fn generate_named_getter_setter(
         let vis: TokenStream2 = config.visibility.to_token_stream();
         if !has_add_get {
             generated.extend(get_quote(vis.clone(), config.return_type));
+            if is_option_type(attr_ty) || is_result_type(attr_ty) {
+                generated.extend(try_get_quote(vis.clone()));
+            }
         }
         if !has_add_get_mut {
             generated.extend(get_mut_quote(vis.clone()));
@@ -846,6 +848,9 @@ fn generate_tuple_getter_setter(
         let vis: TokenStream2 = config.visibility.to_token_stream();
         if !has_add_get {
             generated.extend(get_quote(vis.clone(), config.return_type));
+            if is_option_type(attr_ty) || is_result_type(attr_ty) {
+                generated.extend(try_get_quote(vis.clone()));
+            }
         }
         if !has_add_get_mut {
             generated.extend(get_mut_quote(vis.clone()));

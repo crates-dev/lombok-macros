@@ -15,13 +15,13 @@ struct LombokTest<'a, T: Clone + Debug> {
     name: String,
 }
 
-#[derive(CustomDebug, New)]
+#[derive(CustomDebug, Getter, New)]
 struct User {
     name: String,
     #[debug(skip)]
     _password: String,
     #[new(skip)]
-    email: String,
+    email: Option<String>,
 }
 
 #[derive(Data, Debug, Clone)]
@@ -236,11 +236,13 @@ fn main() {
     let user: User = User {
         name: "Alice".to_string(),
         _password: "secret123".to_string(),
-        email: "alice@example.com".to_string(),
+        email: Some("alice@ltpp.vip".to_string()),
     };
+    assert_eq!(user.get_name(), "Alice");
+    assert_eq!(user.get_email(), "alice@ltpp.vip".to_string());
     let user_debug: String = format!("{user:?}");
     assert!(user_debug.contains("Alice"));
-    assert!(user_debug.contains("alice@example.com"));
+    assert!(user_debug.contains("alice@ltpp.vip"));
     assert!(!user_debug.contains("secret123"));
     let success: Response = Response::Success {
         data: "Operation completed".to_string(),
@@ -256,8 +258,8 @@ fn main() {
     assert!(!error_debug.contains("500"));
     let person = Person::new("Alice".to_string(), 30);
     assert_eq!(person.name, "Alice");
-    let user = User::new("alice".to_string(), "alice@example.com".to_string());
-    assert_eq!(user.email, "");
+    let user = User::new("alice".to_string(), "alice".to_string());
+    assert_eq!(user.email, None);
     let product = Product::new(1, "Laptop".to_string(), 999.99);
     assert_eq!(*product.get_id(), 1);
     assert_eq!(product.get_name(), "Laptop");
