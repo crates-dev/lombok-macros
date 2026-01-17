@@ -31,44 +31,141 @@ pub(crate) use syn::{
     TypeParam, Variant, WhereClause, parse_macro_input,
 };
 
-/// This is an example of how to use the `Lombok` procedural macro with `get` attributes.
+/// A procedural macro that automatically generates getter methods for struct and enum fields.
 ///
-/// The `Lombok` procedural macro is used to automatically generate getter methods for struct fields.
-/// The `get` attribute controls the visibility of the generated getter method.
+/// This macro derives getter methods with configurable visibility and return type behavior.
+/// The generated getters can return either references to field values or cloned copies,
+/// with support for Option and Result types.
 ///
-/// Example:
+/// # Supported Attributes
+/// - `#[get(pub)]`: Generates a public getter with reference return type
+/// - `#[get(pub, reference)]`: Generates a public getter that returns a reference (`&T`)
+/// - `#[get(pub, clone)]`: Generates a public getter that returns a cloned value (`T`)
+/// - `#[get(pub(crate))]`: Generates a crate-visible getter
+/// - `#[get(private)]`: Generates a private getter
+///
+/// # Return Type Behavior
+/// - `reference`: Returns `&T` - a reference to the field value
+/// - `clone`: Returns `T` - a cloned copy of the field value  
+/// - Default behavior: Returns `&T` for non-Option/Result types, `T` for Option/Result types
+///
+/// # Default Behavior Details
+/// - **Non-Option/Result types**: Returns `&T` (reference to field)
+/// - **Option/Result types**: Returns `T` (cloned value) to avoid exposing internal references
+/// - This ensures safe access patterns while maintaining performance for common use cases
+///
+/// # Examples
+///
+/// ## Basic Usage
 ///
 /// ```rust
 /// use lombok_macros::*;
 ///
 /// #[derive(Getter, Clone)]
-/// struct LombokTest2<'a, 'b, T: Clone> {
-///     #[get(pub(crate))]
-///     list: Vec<String>,
-///     #[get(pub(crate))]
-///     opt_str_lifetime_a: Option<&'a T>,
-///     opt_str_lifetime_b: Option<&'b str>,
+/// struct BasicStruct {
+///     #[get(pub)]
+///     name: String,
+///     #[get(pub, reference)]
+///     description: String,
+///     #[get(pub, clone)]
+///     data: Vec<i32>,
 /// }
-/// let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
-/// let data2: LombokTest2<usize> = LombokTest2 {
-///     list: list.clone(),
-///     opt_str_lifetime_a: None,
-///     opt_str_lifetime_b: None,
+/// let basic = BasicStruct {
+///     name: "test".to_string(),
+///     description: "description".to_string(),
+///     data: vec![1, 2, 3],
 /// };
-/// let get_list: Vec<String> = data2.get_list().clone();
-/// assert_eq!(get_list, list);
+/// let name_ref: &String = basic.get_name();
+/// let desc_ref: &String = basic.get_description();
+/// let data_clone: Vec<i32> = basic.get_data();
+/// assert_eq!(*name_ref, "test");
+/// assert_eq!(*desc_ref, "description");
+/// assert_eq!(data_clone, vec![1, 2, 3]);
+/// ```
+///
+/// ## Option and Result Types
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Getter, Clone)]
+/// struct OptionalStruct {
+///     #[get(pub)]
+///     optional: Option<String>,          // Default: returns Option<String> (cloned)
+///     #[get(pub, reference)]
+///     optional_ref: Option<String>,      // Returns &Option<String>
+///     #[get(pub)]
+///     result: Result<String, String>,    // Default: returns Result<String, String> (cloned)
+/// }
+/// let opt_struct = OptionalStruct {
+///     optional: Some("value".to_string()),
+///     optional_ref: Some("ref_value".to_string()),
+///     result: Ok("success".to_string()),
+/// };
+/// let opt_value: String = opt_struct.get_optional();
+/// let opt_ref: &Option<String> = opt_struct.get_optional_ref();
+/// let result_value: String = opt_struct.get_result();
+/// assert_eq!(opt_value, "value");
+/// assert_eq!(*opt_ref, Some("ref_value".to_string()));
+/// assert_eq!(result_value, "success");
+/// ```
+///
+/// ## Tuple Structs
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Getter, Clone)]
+/// struct TupleStruct(
+///     #[get(pub)] String,
+///     #[get(pub, clone)] Vec<i32>,
+/// );
+/// let tuple = TupleStruct("hello".to_string(), vec![1, 2, 3]);
+/// let field0: &String = tuple.get_0();
+/// let field1: Vec<i32> = tuple.get_1();
+/// assert_eq!(*field0, "hello");
+/// assert_eq!(field1, vec![1, 2, 3]);
+/// ```
+///
+/// ## Generics and Lifetimes
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Getter, Clone)]
+/// struct GenericStruct<'a, T: Clone> {
+///     #[get(pub)]
+///     value: &'a T,
+///     #[get(pub, clone)]
+///     owned: T,
+/// }
+/// let data = 42;
+/// let generic = GenericStruct {
+///     value: &data,
+///     owned: 42,
+/// };
+/// let value_ref: &i32 = generic.get_value();
+/// let owned_clone: i32 = generic.get_owned();
+/// assert_eq!(*value_ref, 42);
+/// assert_eq!(owned_clone, 42);
 /// ```
 #[proc_macro_derive(Getter, attributes(get))]
 pub fn getter(input: TokenStream) -> TokenStream {
     inner_lombok_data(input, true, false, false)
 }
 
-/// This is an example of how to use the `Lombok` procedural macro with `get_mut` attributes.
+/// A procedural macro that automatically generates mutable getter methods for struct and enum fields.
 ///
-/// The `Lombok` procedural macro is used to automatically generate mutable getters for struct fields.
-/// The `get_mut` attribute controls the visibility of the mutable getter function.
+/// This macro derives mutable getter methods that provide mutable references to field values,
+/// allowing modification of the struct's fields while maintaining proper borrowing semantics.
 ///
-/// Example:
+/// # Supported Attributes
+/// - `#[get_mut(pub)]`: Generates a public mutable getter
+/// - `#[get_mut(pub(crate))]`: Generates a crate-visible mutable getter
+/// - `#[get_mut(pub(super))]`: Generates a mutable getter visible to parent module
+/// - `#[get_mut(private)]`: Generates a private mutable getter
+///
+/// # Example
 ///
 /// ```rust
 /// use lombok_macros::*;
@@ -87,83 +184,237 @@ pub fn getter(input: TokenStream) -> TokenStream {
 ///     opt_str_lifetime_a: None,
 ///     opt_str_lifetime_b: None,
 /// };
-/// let get_list: Vec<String> = data2.get_mut_list().clone();
-/// assert_eq!(get_list, list);
+/// let mut get_list: &mut Vec<String> = data2.get_mut_list();
+/// get_list.push("new_item".to_string());
+/// assert_eq!(*get_list, vec!["hello".to_string(), "world".to_string(), "new_item".to_string()]);
 /// ```
 #[proc_macro_derive(GetterMut, attributes(get_mut))]
 pub fn getter_mut(input: TokenStream) -> TokenStream {
     inner_lombok_data(input, false, true, false)
 }
 
-/// This is an example of how to use the `Lombok` procedural macro with `set` attributes.
+/// A procedural macro that automatically generates setter methods for struct and enum fields.
 ///
-/// The `Lombok` procedural macro is used to automatically generate setters for struct fields.
-/// The `set` attribute controls the visibility of the setter function.
+/// This macro derives setter methods that allow modification of struct fields with
+/// configurable visibility and parameter type conversion options.
 ///
-/// Example:
+/// # Supported Attributes
+/// - `#[set(pub)]`: Generates a public setter
+/// - `#[set(pub(crate))]`: Generates a crate-visible setter
+/// - `#[set(pub(super))]`: Generates a setter visible to parent module
+/// - `#[set(private)]`: Generates a private setter
+/// - `#[set(pub, Into)]`: Generates a setter that accepts any type implementing Into<T>
+/// - `#[set(pub, AsRef)]`: Generates a setter that accepts types implementing AsRef<T>
+///
+/// # Parameter Conversion
+/// - `Into`: Enables accepting any type that implements `Into<T>` for the field type
+/// - `AsRef`: Enables accepting types that implement `AsRef<T>` for the field type
+/// - Default: Accepts the exact field type
+///
+/// # Examples
+///
+/// ## Basic Usage
 ///
 /// ```rust
 /// use lombok_macros::*;
 ///
 /// #[derive(Setter, Debug, Clone)]
-/// struct LombokTest<'a, 'b, T: Clone> {
+/// struct BasicStruct {
+///     #[set(pub)]
+///     name: String,
 ///     #[set(pub(crate))]
-///     list: Vec<String>,
-///     opt_str_lifetime_a: Option<&'a T>,
+///     value: i32,
 ///     #[set(private)]
-///     opt_str_lifetime_b: Option<&'b str>,
+///     secret: String,
 /// }
-/// let mut data: LombokTest<usize> = LombokTest {
-///     list: Vec::new(),
-///     opt_str_lifetime_a: None,
-///     opt_str_lifetime_b: None,
+/// let mut basic = BasicStruct {
+///     name: "initial".to_string(),
+///     value: 0,
+///     secret: "hidden".to_string(),
 /// };
-/// let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
-/// data.set_list(list.clone());
-/// match data.list {
-///     left_val => {
-///         assert_eq!(*left_val, list);
-///     }
+/// basic.set_name("updated".to_string());
+/// basic.set_value(42);
+/// assert_eq!(basic.name, "updated");
+/// assert_eq!(basic.value, 42);
+/// ```
+///
+/// ## Trait-Based Parameter Conversion
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Setter, Debug, Clone)]
+/// struct ConversionStruct {
+///     #[set(pub, Into)]
+///     name: String,           // Accepts any type that implements Into<String>
+///     #[set(pub, AsRef)]
+///     description: String,    // Accepts any type that implements AsRef<str>
 /// }
+/// let mut conv = ConversionStruct {
+///     name: "initial".to_string(),
+///     description: "desc".to_string(),
+/// };
+///
+/// // Using Into trait: &str implements Into<String>
+/// conv.set_name("from_str");
+///
+/// // Using AsRef trait: &str implements AsRef<str>
+/// conv.set_description("from_str_ref");
+///
+/// assert_eq!(conv.name, "from_str");
+/// assert_eq!(conv.description, "from_str_ref");
+/// ```
+///
+/// ## Tuple Structs
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Setter, Debug, Clone)]
+/// struct TupleStruct(
+///     #[set(pub)] String,
+///     #[set(pub)] i32,
+/// );
+/// let mut tuple = TupleStruct("hello".to_string(), 1);
+/// tuple.set_0("world".to_string());
+/// tuple.set_1(100);
+/// assert_eq!(tuple.0, "world");
+/// assert_eq!(tuple.1, 100);
 /// ```
 #[proc_macro_derive(Setter, attributes(set))]
 pub fn setter(input: TokenStream) -> TokenStream {
     inner_lombok_data(input, false, false, true)
 }
 
-/// This is an example of how to use the `Lombok` procedural macro with `get`, `get_mut`, and `set` attributes.
+/// A procedural macro that combines getter, mutable getter, and setter functionality in a single derive.
 ///
-/// The `Lombok` procedural macro is used to automatically generate getters, mutable getters, and setters for struct fields.
-/// The `get` and `get_mut` attributes control the visibility of the getter functions, while the `set` attribute controls
-/// the visibility of the setter function.
+/// This macro derives all three types of accessor methods (getters, mutable getters, and setters)
+/// for struct and enum fields, providing comprehensive data manipulation capabilities with
+/// configurable visibility and behavior options.
 ///
-/// Example:
+/// # Supported Attributes
+/// - `#[get(...)]`: Controls getter generation (supports `reference`, `clone` options)
+/// - `#[get_mut(...)]`: Controls mutable getter generation
+/// - `#[set(...)]`: Controls setter generation (supports `Into`, `AsRef` options)
+///
+/// # Visibility Control
+/// Each attribute supports the same visibility options:
+/// - `pub`: Public access
+/// - `pub(crate)`: Crate-level access
+/// - `pub(super)`: Parent module access
+/// - `private`: Private access
+///
+/// # Examples
+///
+/// ## Basic Combination
 ///
 /// ```rust
 /// use lombok_macros::*;
 ///
 /// #[derive(Data, Debug, Clone)]
-/// struct LombokTest<'a, 'b, T: Clone> {
-///     #[get(pub(crate))]
-///     #[set(pub(crate))]
-///     list: Vec<String>,
-///     #[get(pub(crate))]
-///     opt_str_lifetime_a: Option<&'a T>,
-///     #[set(private)]
-///     opt_str_lifetime_b: Option<&'b str>,
+/// struct User {
+///     #[get(pub)]
+///     #[set(pub)]
+///     name: String,
+///     #[get(pub, clone)]
+///     #[set(pub, Into)]
+///     email: String,
+///     #[get_mut(pub)]
+///     age: u32,
 /// }
-/// let mut data: LombokTest<usize> = LombokTest {
-///     list: Vec::new(),
-///     opt_str_lifetime_a: None,
-///     opt_str_lifetime_b: None,
+///
+/// let mut user = User {
+///     name: "Alice".to_string(),
+///     email: "alice@example.com".to_string(),
+///     age: 30,
 /// };
-/// let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
-/// data.set_list(list.clone());
-/// match data.get_list() {
-///     left_val => {
-///         assert_eq!(*left_val, list);
-///     }
+///
+/// // Using getters
+/// let name_ref: &String = user.get_name();
+/// let email_clone: String = user.get_email();
+/// assert_eq!(*name_ref, "Alice");
+/// assert_eq!(email_clone, "alice@example.com");
+///
+/// // Using setters with trait conversion
+/// user.set_name("Bob".to_string());
+/// user.set_email("bob@example.com"); // &str implements Into<String>
+///
+/// // Verify setters worked
+/// let updated_email: String = user.get_email();
+/// assert_eq!(updated_email, "bob@example.com");
+///
+/// // Using mutable getters
+/// let age_mut: &mut u32 = user.get_mut_age();
+/// *age_mut = 31;
+///
+/// assert_eq!(*age_mut, 31);
+/// ```
+///
+/// ## Multiple Field Types
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Data, Debug, Clone)]
+/// struct ComplexStruct {
+///     // Regular field with default getter behavior
+///     #[get(pub)]
+///     id: i32,
+///     
+///     // Optional field - automatically returns cloned Option
+///     #[get(pub)]
+///     #[set(pub)]
+///     optional: Option<String>,
+///     
+///     // Result field - automatically returns cloned Result
+///     #[get(pub, reference)]
+///     result: Result<i32, String>,
+///     
+///     // Private field with restricted access
+///     #[get(pub(crate))]
+///     #[set(private)]
+///     internal_data: Vec<u8>,
 /// }
+///
+/// let mut complex = ComplexStruct {
+///     id: 1,
+///     optional: Some("value".to_string()),
+///     result: Ok(42),
+///     internal_data: vec![1, 2, 3],
+/// };
+///
+/// // Default getter behavior: reference for non-Option/Result, clone for Option/Result
+/// let id_ref: &i32 = complex.get_id();
+/// let opt_clone: String = complex.get_optional();
+/// let result_ref: &Result<i32, String> = complex.get_result();
+///
+/// assert_eq!(*id_ref, 1);
+/// assert_eq!(opt_clone, "value");
+/// assert_eq!(*result_ref, Ok(42));
+/// ```
+///
+/// ## Tuple Struct with Combined Accessors
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Data, Debug, Clone)]
+/// struct Point(
+///     #[get(pub)] f64,
+///     #[get(pub, clone)]
+///     #[set(pub)] f64,
+/// );
+///
+/// let mut point = Point(1.0, 2.0);
+/// let x_ref: &f64 = point.get_0();
+/// let y_clone: f64 = point.get_1();
+///
+/// assert_eq!(*x_ref, 1.0);
+/// assert_eq!(y_clone, 2.0);
+///
+/// point.set_1(3.0);
+/// let y_after_set: f64 = point.get_1();
+/// assert_eq!(y_after_set, 3.0);
 /// ```
 #[proc_macro_derive(Data, attributes(get, get_mut, set))]
 pub fn data(input: TokenStream) -> TokenStream {
@@ -336,7 +587,7 @@ pub fn custom_debug(input: TokenStream) -> TokenStream {
 /// assert_eq!(user.created_at, ""); // skipped field defaults to empty string
 /// ```
 ///
-/// ## With Visibility Control
+/// ## With Custom Visibility
 /// ```rust
 /// use lombok_macros::*;
 ///
@@ -345,6 +596,41 @@ pub fn custom_debug(input: TokenStream) -> TokenStream {
 /// struct InternalStruct {
 ///     value: i32,
 /// }
+///
+/// // Generated constructor: pub(crate) fn new(value: i32) -> Self
+/// let internal = InternalStruct::new(42);
+/// assert_eq!(internal.value, 42);
+/// ```
+///
+/// ## Tuple Structs
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(New)]
+/// struct Point(
+///     f64,
+///     f64,
+/// );
+///
+/// let origin = Point::new(0.0, 0.0);
+/// assert_eq!(origin.0, 0.0);
+/// assert_eq!(origin.1, 0.0);
+/// ```
+///
+/// ## Generic Types
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(New)]
+/// struct Container<T: Default + Clone> {
+///     data: T,
+///     #[new(skip)]
+///     count: usize,
+/// }
+///
+/// let container = Container::new("data".to_string());
+/// assert_eq!(container.data, "data");
+/// assert_eq!(container.count, 0); // default value for usize
 /// ```
 ///
 /// # Parameters
