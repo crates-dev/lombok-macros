@@ -1,5 +1,5 @@
 use lombok_macros::*;
-use std::fmt::Debug;
+use std::{f64::consts::PI, fmt::Debug};
 
 #[derive(Data, Debug, Clone, DisplayDebugFormat)]
 struct LombokTest<'a, T: Clone + Debug> {
@@ -121,9 +121,9 @@ struct ComplexNestedStruct {
 
 #[derive(CustomDebug)]
 enum ComplexEnum {
-    SimpleVariant,
-    TupleVariant(String, i32),
-    StructVariant {
+    Simple,
+    Tuple(String, i32),
+    Struct {
         field1: String,
         #[debug(skip)]
         _secret: String,
@@ -181,7 +181,6 @@ struct MultiAttributes {
     complex_field: Vec<String>,
 }
 
-#[test]
 fn main() {
     let mut data: LombokTest<usize> = LombokTest {
         list: Vec::new(),
@@ -300,17 +299,17 @@ fn main() {
     assert_eq!(complex.get_nested().get_name(), "inner");
     assert_eq!(complex.get_nested_list().len(), 1);
     assert_eq!(complex.get_metadata().get("key").unwrap(), "value");
-    let simple = ComplexEnum::SimpleVariant;
-    let tuple = ComplexEnum::TupleVariant("test".to_string(), 123);
-    let struct_variant = ComplexEnum::StructVariant {
+    let simple = ComplexEnum::Simple;
+    let tuple = ComplexEnum::Tuple("test".to_string(), 123);
+    let struct_variant = ComplexEnum::Struct {
         field1: "visible".to_string(),
         _secret: "hidden".to_string(),
-        value: 3.14,
+        value: PI,
     };
     let simple_debug = format!("{simple:?}");
     let tuple_debug = format!("{tuple:?}");
     let struct_debug = format!("{struct_variant:?}");
-    assert!(simple_debug.contains("SimpleVariant"));
+    assert!(simple_debug.contains("Simple"));
     assert!(tuple_debug.contains("test"));
     assert!(tuple_debug.contains("123"));
     assert!(struct_debug.contains("visible"));

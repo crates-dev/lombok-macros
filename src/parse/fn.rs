@@ -29,10 +29,8 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                     config.visibility = Visibility::PublicCrate;
                 } else if ident_str == PUBLIC_SUPER && config.visibility.is_public() {
                     config.visibility = Visibility::PublicSuper;
-                } else if ReturnType::is_known(&ident_str) {
-                    if config.return_type.is_default() {
-                        config.return_type = ident_str.parse::<ReturnType>().unwrap_or_default();
-                    }
+                } else if ReturnType::is_known(&ident_str) && config.return_type.is_default() {
+                    config.return_type = ident_str.parse::<ReturnType>().unwrap_or_default();
                 }
             }
             TokenTree2::Group(group) => {
