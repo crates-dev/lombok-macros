@@ -76,10 +76,10 @@ pub(crate) use syn::{
 ///     data: vec![1, 2, 3],
 /// };
 /// let name_ref: &String = basic.get_name();
-/// let desc_ref: &String = basic.get_description();
+/// let description_ref: &String = basic.get_description();
 /// let data_clone: Vec<i32> = basic.get_data();
 /// assert_eq!(*name_ref, "test");
-/// assert_eq!(*desc_ref, "description");
+/// assert_eq!(*description_ref, "description");
 /// assert_eq!(data_clone, vec![1, 2, 3]);
 /// ```
 ///
@@ -91,22 +91,22 @@ pub(crate) use syn::{
 /// #[derive(Getter, Clone)]
 /// struct OptionalStruct {
 ///     #[get(pub)]
-///     optional: Option<String>,          // Default: returns Option<String> (cloned)
+///     optional: Option<String>,
 ///     #[get(pub, reference)]
-///     optional_ref: Option<String>,      // Returns &Option<String>
+///     optional_ref: Option<String>,
 ///     #[get(pub)]
-///     result: Result<String, String>,    // Default: returns Result<String, String> (cloned)
+///     result: Result<String, String>,
 /// }
 /// let opt_struct = OptionalStruct {
 ///     optional: Some("value".to_string()),
 ///     optional_ref: Some("ref_value".to_string()),
 ///     result: Ok("success".to_string()),
 /// };
-/// let opt_value: String = opt_struct.get_optional();
-/// let opt_ref: &Option<String> = opt_struct.get_optional_ref();
+/// let optional_value: String = opt_struct.get_optional();
+/// let optional_reference: &Option<String> = opt_struct.get_optional_ref();
 /// let result_value: String = opt_struct.get_result();
-/// assert_eq!(opt_value, "value");
-/// assert_eq!(*opt_ref, Some("ref_value".to_string()));
+/// assert_eq!(optional_value, "value");
+/// assert_eq!(*optional_reference, Some("ref_value".to_string()));
 /// assert_eq!(result_value, "success");
 /// ```
 ///
@@ -171,22 +171,22 @@ pub fn getter(input: TokenStream) -> TokenStream {
 /// use lombok_macros::*;
 ///
 /// #[derive(GetterMut, Clone)]
-/// struct LombokTest2<'a, 'b, T: Clone> {
+/// struct StructWithLifetimes<'a, 'b, T: Clone> {
 ///     #[get_mut(pub(crate))]
 ///     list: Vec<String>,
 ///     #[get_mut(pub(crate))]
-///     opt_str_lifetime_a: Option<&'a T>,
-///     opt_str_lifetime_b: Option<&'b str>,
+///     optional_lifetime_a: Option<&'a T>,
+///     optional_lifetime_b: Option<&'b str>,
 /// }
 /// let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
-/// let mut data2: LombokTest2<usize> = LombokTest2 {
+/// let mut struct_with_lifetimes: StructWithLifetimes<usize> = StructWithLifetimes {
 ///     list: list.clone(),
-///     opt_str_lifetime_a: None,
-///     opt_str_lifetime_b: None,
+///     optional_lifetime_a: None,
+///     optional_lifetime_b: None,
 /// };
-/// let mut get_list: &mut Vec<String> = data2.get_mut_list();
-/// get_list.push("new_item".to_string());
-/// assert_eq!(*get_list, vec!["hello".to_string(), "world".to_string(), "new_item".to_string()]);
+/// let mut list_reference: &mut Vec<String> = struct_with_lifetimes.get_mut_list();
+/// list_reference.push("new_item".to_string());
+/// assert_eq!(*list_reference, vec!["hello".to_string(), "world".to_string(), "new_item".to_string()]);
 /// ```
 #[proc_macro_derive(GetterMut, attributes(get_mut))]
 pub fn getter_mut(input: TokenStream) -> TokenStream {
@@ -246,23 +246,20 @@ pub fn getter_mut(input: TokenStream) -> TokenStream {
 /// #[derive(Setter, Debug, Clone)]
 /// struct ConversionStruct {
 ///     #[set(pub, Into)]
-///     name: String,           // Accepts any type that implements Into<String>
+///     name: String,
 ///     #[set(pub, AsRef)]
-///     description: String,    // Accepts any type that implements AsRef<str>
+///     description: String,
 /// }
-/// let mut conv = ConversionStruct {
+/// let mut conversion_struct = ConversionStruct {
 ///     name: "initial".to_string(),
 ///     description: "desc".to_string(),
 /// };
 ///
-/// // Using Into trait: &str implements Into<String>
-/// conv.set_name("from_str");
+/// conversion_struct.set_name("from_str");
+/// conversion_struct.set_description("from_str_ref");
 ///
-/// // Using AsRef trait: &str implements AsRef<str>
-/// conv.set_description("from_str_ref");
-///
-/// assert_eq!(conv.name, "from_str");
-/// assert_eq!(conv.description, "from_str_ref");
+/// assert_eq!(conversion_struct.name, "from_str");
+/// assert_eq!(conversion_struct.description, "from_str_ref");
 /// ```
 ///
 /// ## Tuple Structs
@@ -330,24 +327,24 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// };
 ///
 /// // Using getters
-/// let name_ref: &String = user.get_name();
+/// let name_reference: &String = user.get_name();
 /// let email_clone: String = user.get_email();
-/// assert_eq!(*name_ref, "Alice");
+/// assert_eq!(*name_reference, "Alice");
 /// assert_eq!(email_clone, "alice@example.com");
 ///
 /// // Using setters with trait conversion
 /// user.set_name("Bob".to_string());
-/// user.set_email("bob@example.com"); // &str implements Into<String>
+/// user.set_email("bob@example.com");
 ///
 /// // Verify setters worked
 /// let updated_email: String = user.get_email();
 /// assert_eq!(updated_email, "bob@example.com");
 ///
 /// // Using mutable getters
-/// let age_mut: &mut u32 = user.get_mut_age();
-/// *age_mut = 31;
+/// let age_mutable_reference: &mut u32 = user.get_mut_age();
+/// *age_mutable_reference = 31;
 ///
-/// assert_eq!(*age_mut, 31);
+/// assert_eq!(*age_mutable_reference, 31);
 /// ```
 ///
 /// ## Multiple Field Types
@@ -357,20 +354,13 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///
 /// #[derive(Data, Debug, Clone)]
 /// struct ComplexStruct {
-///     // Regular field with default getter behavior
 ///     #[get(pub)]
 ///     id: i32,
-///     
-///     // Optional field - automatically returns cloned Option
 ///     #[get(pub)]
 ///     #[set(pub)]
 ///     optional: Option<String>,
-///     
-///     // Result field - automatically returns cloned Result
 ///     #[get(pub, reference)]
 ///     result: Result<i32, String>,
-///     
-///     // Private field with restricted access
 ///     #[get(pub(crate))]
 ///     #[set(private)]
 ///     internal_data: Vec<u8>,
@@ -383,14 +373,13 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///     internal_data: vec![1, 2, 3],
 /// };
 ///
-/// // Default getter behavior: reference for non-Option/Result, clone for Option/Result
-/// let id_ref: &i32 = complex.get_id();
-/// let opt_clone: String = complex.get_optional();
-/// let result_ref: &Result<i32, String> = complex.get_result();
+/// let id_reference: &i32 = complex.get_id();
+/// let optional_clone: String = complex.get_optional();
+/// let result_reference: &Result<i32, String> = complex.get_result();
 ///
-/// assert_eq!(*id_ref, 1);
-/// assert_eq!(opt_clone, "value");
-/// assert_eq!(*result_ref, Ok(42));
+/// assert_eq!(*id_reference, 1);
+/// assert_eq!(optional_clone, "value");
+/// assert_eq!(*result_reference, Ok(42));
 /// ```
 ///
 /// ## Tuple Struct with Combined Accessors
@@ -406,15 +395,15 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// );
 ///
 /// let mut point = Point(1.0, 2.0);
-/// let x_ref: &f64 = point.get_0();
-/// let y_clone: f64 = point.get_1();
+/// let x_coordinate: &f64 = point.get_0();
+/// let y_coordinate: f64 = point.get_1();
 ///
-/// assert_eq!(*x_ref, 1.0);
-/// assert_eq!(y_clone, 2.0);
+/// assert_eq!(*x_coordinate, 1.0);
+/// assert_eq!(y_coordinate, 2.0);
 ///
 /// point.set_1(3.0);
-/// let y_after_set: f64 = point.get_1();
-/// assert_eq!(y_after_set, 3.0);
+/// let updated_y_coordinate: f64 = point.get_1();
+/// assert_eq!(updated_y_coordinate, 3.0);
 /// ```
 #[proc_macro_derive(Data, attributes(get, get_mut, set))]
 pub fn data(input: TokenStream) -> TokenStream {
@@ -584,7 +573,7 @@ pub fn custom_debug(input: TokenStream) -> TokenStream {
 /// let user = User::new("alice".to_string(), "alice@example.com".to_string());
 /// assert_eq!(user.username, "alice");
 /// assert_eq!(user.email, "alice@example.com");
-/// assert_eq!(user.created_at, ""); // skipped field defaults to empty string
+/// assert_eq!(user.created_at, "");
 /// ```
 ///
 /// ## With Custom Visibility
@@ -597,7 +586,6 @@ pub fn custom_debug(input: TokenStream) -> TokenStream {
 ///     value: i32,
 /// }
 ///
-/// // Generated constructor: pub(crate) fn new(value: i32) -> Self
 /// let internal = InternalStruct::new(42);
 /// assert_eq!(internal.value, 42);
 /// ```
@@ -630,7 +618,7 @@ pub fn custom_debug(input: TokenStream) -> TokenStream {
 ///
 /// let container = Container::new("data".to_string());
 /// assert_eq!(container.data, "data");
-/// assert_eq!(container.count, 0); // default value for usize
+/// assert_eq!(container.count, 0);
 /// ```
 ///
 /// # Parameters
