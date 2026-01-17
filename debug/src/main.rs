@@ -194,4 +194,150 @@ fn main() {
     trait_test.set_data(&[4, 5, 6, 7]);
     let new_items = vec!["new1".to_string(), "new2".to_string()];
     trait_test.set_items(new_items);
+    assert_eq!(*trait_test.get_name(), "new name");
+    assert_eq!(*trait_test.get_value(), 100);
+    assert_eq!(*trait_test.get_data(), vec![4, 5, 6, 7]);
+    assert_eq!(
+        *trait_test.get_items(),
+        vec!["new1".to_string(), "new2".to_string()]
+    );
+}
+
+/// Test return type control with reference and clone attributes
+#[derive(Data, Debug, Clone)]
+struct ReturnTypeTest {
+    #[get(pub(crate), reference)]
+    ref_field: String,
+    #[get(pub(crate), clone)]
+    clone_field: String,
+    #[get(pub(crate), default)]
+    default_field: String,
+    #[get(pub(crate), reference)]
+    ref_vec: Vec<i32>,
+    #[get(pub(crate), clone)]
+    clone_vec: Vec<i32>,
+    #[get(pub(crate), default)]
+    default_vec: Vec<i32>,
+}
+
+#[test]
+fn test_return_type_control() {
+    let test_data = ReturnTypeTest {
+        ref_field: "reference_field".to_string(),
+        clone_field: "clone_field".to_string(),
+        default_field: "default_field".to_string(),
+        ref_vec: vec![1, 2, 3],
+        clone_vec: vec![4, 5, 6],
+        default_vec: vec![7, 8, 9],
+    };
+
+    // Test reference return type - should return &String
+    let ref_result: &String = test_data.get_ref_field();
+    assert_eq!(*ref_result, "reference_field");
+
+    // Test clone return type - should return String (cloned)
+    let clone_result: String = test_data.get_clone_field();
+    assert_eq!(clone_result, "clone_field");
+
+    // Test default return type - for non-Option/Result, should return &String
+    let default_result: &String = test_data.get_default_field();
+    assert_eq!(*default_result, "default_field");
+
+    // Test reference with Vec - should return &Vec<i32>
+    let ref_vec_result: &Vec<i32> = test_data.get_ref_vec();
+    assert_eq!(*ref_vec_result, vec![1, 2, 3]);
+
+    // Test clone with Vec - should return Vec<i32> (cloned)
+    let clone_vec_result: Vec<i32> = test_data.get_clone_vec();
+    assert_eq!(clone_vec_result, vec![4, 5, 6]);
+
+    // Test default with Vec - for non-Option/Result, should return &Vec<i32>
+    let default_vec_result: &Vec<i32> = test_data.get_default_vec();
+    assert_eq!(*default_vec_result, vec![7, 8, 9]);
+}
+
+#[test]
+fn test_return_type_with_option_result() {
+    #[derive(Data, Debug, Clone)]
+    struct OptionResultTest {
+        #[get(pub(crate), reference)]
+        opt_ref: Option<String>,
+        #[get(pub(crate), clone)]
+        opt_clone: Option<String>,
+        #[get(pub(crate), reference)]
+        res_ref: Result<String, &'static str>,
+        #[get(pub(crate), clone)]
+        res_clone: Result<String, &'static str>,
+    }
+
+    let test_data = OptionResultTest {
+        opt_ref: Some("option_value".to_string()),
+        opt_clone: Some("option_clone".to_string()),
+        res_ref: Ok("result_value".to_string()),
+        res_clone: Ok("result_clone".to_string()),
+    };
+
+    // With reference attribute, Option/Result should return reference to the whole type
+    let opt_ref_result: &Option<String> = test_data.get_opt_ref();
+    assert_eq!(opt_ref_result.as_ref().unwrap(), "option_value");
+
+    let opt_clone_result: Option<String> = test_data.get_opt_clone();
+    assert_eq!(opt_clone_result.unwrap(), "option_clone");
+
+    let res_ref_result: &Result<String, &'static str> = test_data.get_res_ref();
+    assert_eq!(res_ref_result.as_ref().unwrap(), "result_value");
+
+    let res_clone_result: Result<String, &'static str> = test_data.get_res_clone();
+    assert_eq!(res_clone_result.unwrap(), "result_clone");
+}
+
+#[test]
+fn test_usage_examples() {
+    #[derive(Data, Clone, Debug)]
+    struct Example {
+        #[get(pub, reference)]
+        name: String,
+
+        #[get(pub, clone)]
+        description: String,
+
+        // Uses default behavior: for non-Option/Result types, returns &T
+        #[get(pub, default)]
+        tag: String,
+
+        // For Option/Result, reference returns &Option<T>, clone returns Option<T>
+        #[get(pub, reference)]
+        optional: Option<i32>,
+
+        #[get(pub, clone)]
+        result: Result<String, &'static str>,
+    }
+
+    let example = Example {
+        name: "John Doe".to_string(),
+        description: "Software engineer".to_string(),
+        tag: "developer".to_string(),
+        optional: Some(42),
+        result: Ok("success".to_string()),
+    };
+
+    // Reference returns - no copying, borrow the field
+    let name_ref: &String = example.get_name();
+    assert_eq!(*name_ref, "John Doe");
+
+    // Clone returns - creates a copy, transfers ownership
+    let description_owned: String = example.get_description();
+    assert_eq!(description_owned, "Software engineer");
+
+    // Default behavior for simple types - returns reference
+    let tag_ref: &String = example.get_tag();
+    assert_eq!(*tag_ref, "developer");
+
+    // For Option/Result with reference - returns &Option<T> or &Result<T, E>
+    let opt_ref: &Option<i32> = example.get_optional();
+    assert_eq!(opt_ref.unwrap(), 42);
+
+    // For Option/Result with clone - returns Option<T> or Result<T, E>
+    let result_owned: Result<String, &'static str> = example.get_result();
+    assert_eq!(result_owned.unwrap(), "success");
 }
