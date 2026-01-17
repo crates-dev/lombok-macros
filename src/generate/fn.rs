@@ -296,6 +296,14 @@ fn generate_named_getter_setter(
                         }
                     }
                 }
+                ReturnType::Copy => {
+                    quote! {
+                        #[inline(always)]
+                        #vis fn #get_name(&self) -> #attr_ty {
+                            self.#attr_name_ident
+                        }
+                    }
+                }
                 ReturnType::Deref => {
                     if is_option_type(attr_ty) {
                         let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
@@ -616,6 +624,14 @@ fn generate_tuple_getter_setter(
                         #[inline(always)]
                         #vis fn #get_name(&self) -> #attr_ty {
                             self.#field_index.clone()
+                        }
+                    }
+                }
+                ReturnType::Copy => {
+                    quote! {
+                        #[inline(always)]
+                        #vis fn #get_name(&self) -> #attr_ty {
+                            self.#field_index
                         }
                     }
                 }

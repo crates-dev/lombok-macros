@@ -41,6 +41,7 @@ pub(crate) use syn::{
 /// - `#[get(pub)]`: Generates a public getter with reference return type
 /// - `#[get(pub, reference)]`: Generates a public getter that returns a reference (`&T`)
 /// - `#[get(pub, clone)]`: Generates a public getter that returns a cloned value (`T`)
+/// - `#[get(pub, copy)]`: Generates a public getter that returns a copy of the field value (`self.field`) for Copy types
 /// - `#[get(pub, deref)]`: Generates a public getter that returns a dereferenced value (`*field`) with enhanced match control for Option/Result types
 /// - `#[get(pub(crate))]`: Generates a crate-visible getter
 /// - `#[get(private)]`: Generates a private getter
@@ -48,6 +49,7 @@ pub(crate) use syn::{
 /// # Return Type Behavior
 /// - `reference`: Returns `&T` - a reference to the field value
 /// - `clone`: Returns `T` - a cloned copy of the field value  
+/// - `copy`: Returns `T` - a copy of the field value (`self.field`) for types implementing Copy trait
 /// - `deref`: Returns dereferenced values with enhanced match control:
 ///   - `Option<T>` → `T` with detailed None panic messages
 ///   - `Result<T, E>` → `T` with detailed Err panic messages
@@ -77,18 +79,23 @@ pub(crate) use syn::{
 ///     description: String,
 ///     #[get(pub, clone)]
 ///     data: Vec<i32>,
+///     #[get(pub, copy)]
+///     count: i32,
 /// }
 /// let basic = BasicStruct {
 ///     name: "test".to_string(),
 ///     description: "description".to_string(),
 ///     data: vec![1, 2, 3],
+///     count: 42,
 /// };
 /// let name_ref: &String = basic.get_name();
 /// let description_ref: &String = basic.get_description();
 /// let data_clone: Vec<i32> = basic.get_data();
+/// let count_copy: i32 = basic.get_count();
 /// assert_eq!(*name_ref, "test");
 /// assert_eq!(*description_ref, "description");
 /// assert_eq!(data_clone, vec![1, 2, 3]);
+/// assert_eq!(count_copy, 42);
 /// ```
 ///
 /// ## Option and Result Types

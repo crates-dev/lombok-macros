@@ -160,6 +160,16 @@ struct EdgeCaseTest {
     option_none: Option<String>,
 }
 
+#[derive(Data, Debug, Clone)]
+struct CopyTest {
+    #[get(pub, copy)]
+    value: i32,
+    #[get(pub, copy)]
+    flag: bool,
+    #[get(pub, copy)]
+    count: u64,
+}
+
 #[derive(Data)]
 struct UnitGetSet {
     #[get(pub)]
@@ -357,4 +367,15 @@ fn main() {
     mutated.set_complex_field(new_vec.clone());
     let updated = mutated.get_complex_field();
     assert_eq!(updated, new_vec);
+    let copy_test = CopyTest {
+        value: 42,
+        flag: true,
+        count: 1000,
+    };
+    let copied_value: i32 = copy_test.get_value();
+    let copied_flag: bool = copy_test.get_flag();
+    let copied_count: u64 = copy_test.get_count();
+    assert_eq!(copied_value, 42);
+    assert!(copied_flag);
+    assert_eq!(copied_count, 1000);
 }

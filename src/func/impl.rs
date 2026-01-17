@@ -180,7 +180,7 @@ impl ReturnType {
     /// - `true` if the string is a known return type; otherwise, `false`.
     #[inline(always)]
     pub(crate) fn is_known(s: &str) -> bool {
-        matches!(s, REFERENCE | CLONE | DEREF)
+        matches!(s, REFERENCE | CLONE | COPY | DEREF)
     }
 }
 
@@ -211,6 +211,7 @@ impl FromStr for ReturnType {
         match s {
             REFERENCE => Ok(ReturnType::Reference),
             CLONE => Ok(ReturnType::Clone),
+            COPY => Ok(ReturnType::Copy),
             DEREF => Ok(ReturnType::Deref),
             _ => Ok(ReturnType::Default),
         }
