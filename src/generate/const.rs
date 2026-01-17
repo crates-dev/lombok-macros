@@ -15,3 +15,12 @@ pub(crate) const UNSUPPORTED_DATA_DERIVE: &str = "#[derive(Data)] is only suppor
 
 /// Error message indicating that #[derive(New)] is only supported for structs.
 pub(crate) const UNSUPPORTED_NEW_DERIVE: &str = "#[derive(New)] is only supported for structs.";
+
+/// The string prefix used for raw identifiers.
+pub(crate) const RAW_IDENT_PREFIX: &str = "r#";
+
+/// The Option type identifier.
+pub(crate) const OPTION_TYPE: &str = "Option";
+
+/// The try_get method prefix.
+pub(crate) const TRY_GET_METHOD_PREFIX: &str = "try_";

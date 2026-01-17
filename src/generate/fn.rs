@@ -10,12 +10,34 @@ use crate::*;
 ///
 /// - `String` - The cleaned attribute name.
 fn get_clean_attr_name(attr_str: &str) -> String {
-    let clean_attr: String = if let Some(stripped) = attr_str.strip_prefix("r#") {
+    let clean_attr: String = if let Some(stripped) = attr_str.strip_prefix(RAW_IDENT_PREFIX) {
         stripped.to_owned()
     } else {
         attr_str.to_owned()
     };
     clean_attr
+}
+
+/// Checks if a type is an Option<T> type.
+///
+/// # Arguments
+///
+/// - `&Type` - The type to check.
+///
+/// # Returns
+///
+/// - `bool` - true if the type is Option<T>, false otherwise.
+fn is_option_type(ty: &Type) -> bool {
+    match ty {
+        Type::Path(type_path) => {
+            if let Some(segment) = type_path.path.segments.last() {
+                segment.ident == OPTION_TYPE
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
 }
 
 /// Generates getter and setter functions for a given struct field.
@@ -83,9 +105,49 @@ fn generate_named_getter_setter(
     }
     let get_quote = |vis: TokenStream2| {
         if need_getter {
+            if is_option_type(attr_ty) {
+                let inner_ty = if let Type::Path(type_path) = attr_ty {
+                    if let Some(segment) = type_path.path.segments.last() {
+                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                quote! { #ty }
+                            } else {
+                                quote! { #attr_ty }
+                            }
+                        } else {
+                            quote! { #attr_ty }
+                        }
+                    } else {
+                        quote! { #attr_ty }
+                    }
+                } else {
+                    quote! { #attr_ty }
+                };
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #inner_ty {
+                        self.#attr_name_ident.unwrap()
+                    }
+                }
+            } else {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> &#attr_ty {
+                        &self.#attr_name_ident
+                    }
+                }
+            }
+        } else {
+            quote! {}
+        }
+    };
+
+    let try_get_quote = |vis: TokenStream2| {
+        if need_getter && is_option_type(attr_ty) {
+            let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
             quote! {
                 #[inline(always)]
-                #vis fn #get_name(&self) -> &#attr_ty {
+                #vis fn #try_get_name(&self) -> &#attr_ty {
                     &self.#attr_name_ident
                 }
             }
@@ -133,6 +195,9 @@ fn generate_named_getter_setter(
             if config.func_type.is_get() {
                 if !config.skip && !has_add_get {
                     generated.extend(get_quote(vis.clone()));
+                    if is_option_type(attr_ty) {
+                        generated.extend(try_get_quote(vis.clone()));
+                    }
                 }
                 has_add_get = true;
             }
@@ -190,7 +255,7 @@ fn generate_tuple_getter_setter(
     let get_name: Ident = format_ident!("{}{}", GET_METHOD_PREFIX, index);
     let get_mut_name: Ident = format_ident!("{}{}", GET_MUT_METHOD_PREFIX, index);
     let set_name: Ident = format_ident!("{}{}", SET_METHOD_PREFIX, index);
-    let field_index: syn::Index = syn::Index::from(index);
+    let field_index: Index = Index::from(index);
     let mut generated: TokenStream2 = quote! {};
     let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
     for attr in &field.attrs {
@@ -200,9 +265,49 @@ fn generate_tuple_getter_setter(
     }
     let get_quote = |vis: TokenStream2| {
         if need_getter {
+            if is_option_type(attr_ty) {
+                let inner_ty = if let Type::Path(type_path) = attr_ty {
+                    if let Some(segment) = type_path.path.segments.last() {
+                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                quote! { #ty }
+                            } else {
+                                quote! { #attr_ty }
+                            }
+                        } else {
+                            quote! { #attr_ty }
+                        }
+                    } else {
+                        quote! { #attr_ty }
+                    }
+                } else {
+                    quote! { #attr_ty }
+                };
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #inner_ty {
+                        self.#field_index.unwrap()
+                    }
+                }
+            } else {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> &#attr_ty {
+                        &self.#field_index
+                    }
+                }
+            }
+        } else {
+            quote! {}
+        }
+    };
+
+    let try_get_quote = |vis: TokenStream2| {
+        if need_getter && is_option_type(attr_ty) {
+            let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
             quote! {
                 #[inline(always)]
-                #vis fn #get_name(&self) -> &#attr_ty {
+                #vis fn #try_get_name(&self) -> &#attr_ty {
                     &self.#field_index
                 }
             }
@@ -210,6 +315,7 @@ fn generate_tuple_getter_setter(
             quote! {}
         }
     };
+
     let get_mut_quote = |vis: TokenStream2| {
         if need_getter_mut {
             quote! {
@@ -250,6 +356,9 @@ fn generate_tuple_getter_setter(
             if config.func_type.is_get() {
                 if !config.skip && !has_add_get {
                     generated.extend(get_quote(vis.clone()));
+                    if is_option_type(attr_ty) {
+                        generated.extend(try_get_quote(vis.clone()));
+                    }
                 }
                 has_add_get = true;
             }
@@ -342,14 +451,14 @@ pub(crate) fn inner_lombok_data(
     let where_clause: &Option<WhereClause> = &input.generics.where_clause;
     let methods: Vec<TokenStream2> = match input.data {
         Data::Struct(ref s) => match &s.fields {
-            syn::Fields::Named(_) => s
+            Fields::Named(_) => s
                 .fields
                 .iter()
                 .map(|field| {
                     generate_getter_setter(field, None, need_getter, need_getter_mut, need_setter)
                 })
                 .collect::<Vec<_>>(),
-            syn::Fields::Unnamed(_) => s
+            Fields::Unnamed(_) => s
                 .fields
                 .iter()
                 .enumerate()
@@ -363,7 +472,7 @@ pub(crate) fn inner_lombok_data(
                     )
                 })
                 .collect::<Vec<_>>(),
-            syn::Fields::Unit => Vec::new(),
+            Fields::Unit => Vec::new(),
         },
         _ => panic!("{}", UNSUPPORTED_DATA_DERIVE),
     };
@@ -417,7 +526,7 @@ pub(crate) fn inner_lombok_data(
 pub(super) fn inner_display(input: TokenStream, is_format: bool) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input as DeriveInput);
     let name: &Ident = &input.ident;
-    let generics: &syn::Generics = &input.generics;
+    let generics: &Generics = &input.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let expanded: TokenStream2 = if is_format {
         quote! {
@@ -477,13 +586,13 @@ pub(crate) fn inner_display_debug_format(input: TokenStream) -> TokenStream {
 pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input as DeriveInput);
     let name: &Ident = &input.ident;
-    let generics: &syn::Generics = &input.generics;
+    let generics: &Generics = &input.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     match &input.data {
         Data::Struct(data_struct) => {
-            let fields: &syn::Fields = &data_struct.fields;
+            let fields: &Fields = &data_struct.fields;
             match fields {
-                syn::Fields::Named(_) => {
+                Fields::Named(_) => {
                     let debug_fields: Vec<TokenStream2> = fields
                         .iter()
                         .filter_map(|field: &Field| {
@@ -518,7 +627,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                     };
                     TokenStream::from(expanded)
                 }
-                syn::Fields::Unnamed(_) => {
+                Fields::Unnamed(_) => {
                     let debug_fields: Vec<TokenStream2> = fields
                         .iter()
                         .enumerate()
@@ -534,7 +643,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                             if should_skip {
                                 None
                             } else {
-                                let field_index: syn::Index = syn::Index::from(i);
+                                let field_index: Index = Index::from(i);
                                 Some(quote! {
                                     .field(&self.#field_index)
                                 })
@@ -553,7 +662,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                     };
                     TokenStream::from(expanded)
                 }
-                syn::Fields::Unit => {
+                Fields::Unit => {
                     let struct_name_str: String = name.to_string();
                     let expanded: TokenStream2 = quote! {
                         impl #impl_generics std::fmt::Debug for #name #ty_generics #where_clause {
@@ -570,11 +679,11 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
             let variants: Vec<TokenStream2> = data_enum
                 .variants
                 .iter()
-                .map(|variant: &syn::Variant| {
+                .map(|variant: &Variant| {
                     let variant_name: &Ident = &variant.ident;
                     let variant_name_str: String = variant_name.to_string();
                     match &variant.fields {
-                        syn::Fields::Named(fields_named) => {
+                        Fields::Named(fields_named) => {
                             let field_patterns: Vec<TokenStream2> = fields_named
                                 .named
                                 .iter()
@@ -615,7 +724,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                                 }
                             }
                         }
-                        syn::Fields::Unnamed(fields_unnamed) => {
+                        Fields::Unnamed(fields_unnamed) => {
                             let field_patterns: Vec<TokenStream2> = fields_unnamed
                                 .unnamed
                                 .iter()
@@ -657,7 +766,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                                 }
                             }
                         }
-                        syn::Fields::Unit => {
+                        Fields::Unit => {
                             quote! {
                                 #name::#variant_name => {
                                     f.debug_struct(#variant_name_str).finish()
@@ -755,35 +864,35 @@ fn analyze_tuple_field_for_new(field: &Field, index: usize) -> Option<(Ident, Ty
 /// - `TokenStream` - The generated constructor implementation.
 pub(crate) fn inner_new_constructor(input: &DeriveInput, visibility: Visibility) -> TokenStream {
     let name: &Ident = &input.ident;
-    let generics: &syn::Generics = &input.generics;
+    let generics: &Generics = &input.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let fields_info: Vec<(Ident, Type)> = match &input.data {
         Data::Struct(data_struct) => match &data_struct.fields {
-            syn::Fields::Named(named_fields) => named_fields
+            Fields::Named(named_fields) => named_fields
                 .named
                 .iter()
                 .filter_map(analyze_named_field_for_new)
                 .collect(),
-            syn::Fields::Unnamed(unnamed_fields) => unnamed_fields
+            Fields::Unnamed(unnamed_fields) => unnamed_fields
                 .unnamed
                 .iter()
                 .enumerate()
                 .filter_map(|(index, field)| analyze_tuple_field_for_new(field, index))
                 .collect(),
-            syn::Fields::Unit => Vec::new(),
+            Fields::Unit => Vec::new(),
         },
         _ => panic!("{}", UNSUPPORTED_NEW_DERIVE),
     };
-    let tuple_field_mapping: Vec<(syn::Index, Ident)> = match &input.data {
+    let tuple_field_mapping: Vec<(Index, Ident)> = match &input.data {
         Data::Struct(data_struct) => match &data_struct.fields {
-            syn::Fields::Unnamed(unnamed_fields) => unnamed_fields
+            Fields::Unnamed(unnamed_fields) => unnamed_fields
                 .unnamed
                 .iter()
                 .enumerate()
                 .filter_map(|(index, field)| {
                     if !should_skip_field_for_new(field) {
                         let param_name: Ident = format_ident!("field_{}", index);
-                        Some((syn::Index::from(index), param_name))
+                        Some((Index::from(index), param_name))
                     } else {
                         None
                     }
@@ -801,7 +910,7 @@ pub(crate) fn inner_new_constructor(input: &DeriveInput, visibility: Visibility)
         .collect();
     let constructor_fields: TokenStream2 = match &input.data {
         Data::Struct(data_struct) => match &data_struct.fields {
-            syn::Fields::Named(_) => {
+            Fields::Named(_) => {
                 let field_initializers: Vec<TokenStream2> = data_struct
                     .fields
                     .iter()
@@ -816,13 +925,13 @@ pub(crate) fn inner_new_constructor(input: &DeriveInput, visibility: Visibility)
                     .collect();
                 quote! { { #(#field_initializers),* } }
             }
-            syn::Fields::Unnamed(_) => {
+            Fields::Unnamed(_) => {
                 let field_initializers: Vec<TokenStream2> = data_struct
                     .fields
                     .iter()
                     .enumerate()
                     .map(|(index, field)| {
-                        let field_index: syn::Index = syn::Index::from(index);
+                        let field_index: Index = Index::from(index);
                         if !should_skip_field_for_new(field) {
                             if let Some((_, param_name)) = tuple_field_mapping
                                 .iter()
@@ -839,7 +948,7 @@ pub(crate) fn inner_new_constructor(input: &DeriveInput, visibility: Visibility)
                     .collect();
                 quote! { ( #(#field_initializers),* ) }
             }
-            syn::Fields::Unit => quote! { {} },
+            Fields::Unit => quote! { {} },
         },
         _ => panic!("{}", UNSUPPORTED_NEW_DERIVE),
     };

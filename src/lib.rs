@@ -24,11 +24,11 @@ pub(crate) use proc_macro2::{
 pub(crate) use quote::{ToTokens, format_ident, quote};
 pub(crate) use std::{collections::HashMap, str::FromStr};
 pub(crate) use syn::{
-    Data, DeriveInput, Field,
+    Data, DeriveInput, Field, Fields, GenericArgument,
     GenericParam::{self},
-    Ident, Lifetime,
+    Generics, Ident, Index, Lifetime, PathArguments,
     Type::{self},
-    TypeParam, WhereClause, parse_macro_input,
+    TypeParam, Variant, WhereClause, parse_macro_input,
 };
 
 /// This is an example of how to use the `Lombok` procedural macro with `get` attributes.

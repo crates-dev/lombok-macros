@@ -92,8 +92,13 @@ fn main() {
     let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
     data.set_list(list.clone());
     assert_eq!(*data.get_list(), list);
-    let opt_value: &Option<&usize> = data.get_opt_value();
+    let opt_value: &Option<&usize> = data.try_get_opt_value();
     assert_eq!(*opt_value, None);
+    data.set_opt_value(Some(&42));
+    let try_opt_value: &Option<&usize> = data.try_get_opt_value();
+    assert_eq!(try_opt_value, &Some(&42));
+    let unwrap_value: &usize = data.get_opt_value();
+    assert_eq!(unwrap_value, &42);
     let name_mut: &mut String = data.get_mut_name();
     *name_mut = "updated".to_string();
     assert!(!data.to_string().is_empty());
