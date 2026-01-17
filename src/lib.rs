@@ -142,8 +142,8 @@ pub(crate) use syn::{
 ///
 /// #[derive(Getter, Clone)]
 /// struct DerefStruct {
-///     #[get(pub, deref)]
-///     optional: Option<i32>,
+///     #[get(deref)]
+///     optional: Option<bool>,
 ///     #[get(pub, deref)]
 ///     result: Result<String, &'static str>,
 ///     #[get(pub, deref)]
@@ -154,18 +154,18 @@ pub(crate) use syn::{
 ///     arc_value: std::sync::Arc<Vec<u8>>,
 /// }
 /// let deref_struct = DerefStruct {
-///     optional: Some(42),
+///     optional: Some(true),
 ///     result: Ok("success".to_string()),
 ///     boxed_value: Box::new(100),
 ///     rc_value: std::rc::Rc::new("test".to_string()),
 ///     arc_value: std::sync::Arc::new(vec![1, 2, 3]),
 /// };
-/// let optional_value: i32 = deref_struct.get_optional();
+/// let optional_value: bool = deref_struct.get_optional();
 /// let result_value: String = deref_struct.get_result();
 /// let boxed_value: i32 = deref_struct.get_boxed_value();
 /// let rc_value: String = deref_struct.get_rc_value();
 /// let arc_value: Vec<u8> = deref_struct.get_arc_value();
-/// assert_eq!(optional_value, 42);
+/// assert_eq!(optional_value, true);
 /// assert_eq!(result_value, "success");
 /// assert_eq!(boxed_value, 100);
 /// assert_eq!(rc_value, "test");
