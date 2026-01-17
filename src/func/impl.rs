@@ -164,9 +164,6 @@ impl TraitType {
 impl ReturnType {
     /// Checks if the return type is `Default`.
     ///
-    /// # Parameters
-    /// - `self` - The reference to the `ReturnType` instance.
-    ///
     /// # Returns
     /// - `true` if the return type is `Default`; otherwise, `false`.
     #[inline(always)]
@@ -177,13 +174,13 @@ impl ReturnType {
     /// Checks if the given string is a known return type.
     ///
     /// # Parameters
-    /// - `s` - The string to check.
+    /// - `&str` - The string to check.
     ///
     /// # Returns
     /// - `true` if the string is a known return type; otherwise, `false`.
     #[inline(always)]
     pub(crate) fn is_known(s: &str) -> bool {
-        matches!(s, REFERENCE | CLONE)
+        matches!(s, REFERENCE | CLONE | DEREF)
     }
 }
 
@@ -214,6 +211,7 @@ impl FromStr for ReturnType {
         match s {
             REFERENCE => Ok(ReturnType::Reference),
             CLONE => Ok(ReturnType::Clone),
+            DEREF => Ok(ReturnType::Deref),
             _ => Ok(ReturnType::Default),
         }
     }

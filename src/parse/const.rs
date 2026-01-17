@@ -33,3 +33,6 @@ pub const REFERENCE: &str = "reference";
 
 /// Constant for return clone type.
 pub const CLONE: &str = "clone";
+
+/// Constant for return deref type.
+pub const DEREF: &str = "deref";

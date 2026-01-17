@@ -41,12 +41,20 @@ pub(crate) use syn::{
 /// - `#[get(pub)]`: Generates a public getter with reference return type
 /// - `#[get(pub, reference)]`: Generates a public getter that returns a reference (`&T`)
 /// - `#[get(pub, clone)]`: Generates a public getter that returns a cloned value (`T`)
+/// - `#[get(pub, deref)]`: Generates a public getter that returns a dereferenced value (`*field`) with enhanced match control for Option/Result types
 /// - `#[get(pub(crate))]`: Generates a crate-visible getter
 /// - `#[get(private)]`: Generates a private getter
 ///
 /// # Return Type Behavior
 /// - `reference`: Returns `&T` - a reference to the field value
 /// - `clone`: Returns `T` - a cloned copy of the field value  
+/// - `deref`: Returns dereferenced values with enhanced match control:
+///   - `Option<T>` → `T` with detailed None panic messages
+///   - `Result<T, E>` → `T` with detailed Err panic messages
+///   - `Box<T>` → `T` by dereferencing the box
+///   - `Rc<T>` → `T` by cloning the inner value
+///   - `Arc<T>` → `T` by cloning the inner value
+///   - Other types → `T` by dereferencing
 /// - Default behavior: Returns `&T` for non-Option/Result types, `T` for Option/Result types
 ///
 /// # Default Behavior Details
@@ -125,6 +133,43 @@ pub(crate) use syn::{
 /// let field1: Vec<i32> = tuple.get_1();
 /// assert_eq!(*field0, "hello");
 /// assert_eq!(field1, vec![1, 2, 3]);
+/// ```
+///
+/// ## Deref Return Type with Enhanced Match Control
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Getter, Clone)]
+/// struct DerefStruct {
+///     #[get(pub, deref)]
+///     optional: Option<i32>,
+///     #[get(pub, deref)]
+///     result: Result<String, &'static str>,
+///     #[get(pub, deref)]
+///     boxed_value: Box<i32>,
+///     #[get(pub, deref)]
+///     rc_value: std::rc::Rc<String>,
+///     #[get(pub, deref)]
+///     arc_value: std::sync::Arc<Vec<u8>>,
+/// }
+/// let deref_struct = DerefStruct {
+///     optional: Some(42),
+///     result: Ok("success".to_string()),
+///     boxed_value: Box::new(100),
+///     rc_value: std::rc::Rc::new("test".to_string()),
+///     arc_value: std::sync::Arc::new(vec![1, 2, 3]),
+/// };
+/// let optional_value: i32 = deref_struct.get_optional();
+/// let result_value: String = deref_struct.get_result();
+/// let boxed_value: i32 = deref_struct.get_boxed_value();
+/// let rc_value: String = deref_struct.get_rc_value();
+/// let arc_value: Vec<u8> = deref_struct.get_arc_value();
+/// assert_eq!(optional_value, 42);
+/// assert_eq!(result_value, "success");
+/// assert_eq!(boxed_value, 100);
+/// assert_eq!(rc_value, "test");
+/// assert_eq!(arc_value, vec![1, 2, 3]);
 /// ```
 ///
 /// ## Generics and Lifetimes

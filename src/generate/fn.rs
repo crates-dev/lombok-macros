@@ -84,6 +84,72 @@ fn is_string_type(ty: &Type) -> bool {
     }
 }
 
+/// Checks if a type is a Box<T> type.
+///
+/// # Arguments
+///
+/// - `&Type` - The type to check.
+///
+/// # Returns
+///
+/// - `bool` - true if the type is Box<T>, false otherwise.
+fn is_box_type(ty: &Type) -> bool {
+    match ty {
+        Type::Path(type_path) => {
+            if let Some(segment) = type_path.path.segments.last() {
+                segment.ident == "Box"
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
+/// Checks if a type is an Rc<T> type.
+///
+/// # Arguments
+///
+/// - `&Type` - The type to check.
+///
+/// # Returns
+///
+/// - `bool` - true if the type is Rc<T>, false otherwise.
+fn is_rc_type(ty: &Type) -> bool {
+    match ty {
+        Type::Path(type_path) => {
+            if let Some(segment) = type_path.path.segments.last() {
+                segment.ident == "Rc"
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
+/// Checks if a type is an Arc<T> type.
+///
+/// # Arguments
+///
+/// - `&Type` - The type to check.
+///
+/// # Returns
+///
+/// - `bool` - true if the type is Arc<T>, false otherwise.
+fn is_arc_type(ty: &Type) -> bool {
+    match ty {
+        Type::Path(type_path) => {
+            if let Some(segment) = type_path.path.segments.last() {
+                segment.ident == "Arc"
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
 /// Checks if a type is a Vec<T> type.
 ///
 /// # Arguments
@@ -227,6 +293,119 @@ fn generate_named_getter_setter(
                         #[inline(always)]
                         #vis fn #get_name(&self) -> #attr_ty {
                             self.#attr_name_ident.clone()
+                        }
+                    }
+                }
+                ReturnType::Deref => {
+                    if is_option_type(attr_ty) {
+                        let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
+                            if let Some(segment) = type_path.path.segments.last() {
+                                if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                                    if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                        quote! { #ty }
+                                    } else {
+                                        quote! { #attr_ty }
+                                    }
+                                } else {
+                                    quote! { #attr_ty }
+                                }
+                            } else {
+                                quote! { #attr_ty }
+                            }
+                        } else {
+                            quote! { #attr_ty }
+                        };
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #inner_ty {
+                                match &self.#attr_name_ident {
+                                    Some(value) => *value,
+                                    None => panic!("Attempted to dereference None value for field '{}'", stringify!(#attr_name_ident)),
+                                }
+                            }
+                        }
+                    } else if is_result_type(attr_ty) {
+                        let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
+                            if let Some(segment) = type_path.path.segments.last() {
+                                if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                                    if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                        quote! { #ty }
+                                    } else {
+                                        quote! { #attr_ty }
+                                    }
+                                } else {
+                                    quote! { #attr_ty }
+                                }
+                            } else {
+                                quote! { #attr_ty }
+                            }
+                        } else {
+                            quote! { #attr_ty }
+                        };
+
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #inner_ty {
+                                match &self.#attr_name_ident {
+                                    Ok(value) => (*value).clone(),
+                                    Err(err) => panic!("Failed to dereference Result for field '{}': {:?}", stringify!(#attr_name_ident), err),
+                                }
+                            }
+                        }
+                    } else if is_box_type(attr_ty) {
+                        let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
+                            if let Some(segment) = type_path.path.segments.last() {
+                                if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                                    if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                        quote! { #ty }
+                                    } else {
+                                        quote! { #attr_ty }
+                                    }
+                                } else {
+                                    quote! { #attr_ty }
+                                }
+                            } else {
+                                quote! { #attr_ty }
+                            }
+                        } else {
+                            quote! { #attr_ty }
+                        };
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #inner_ty {
+                                *self.#attr_name_ident
+                            }
+                        }
+                    } else if is_rc_type(attr_ty) || is_arc_type(attr_ty) {
+                        let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
+                            if let Some(segment) = type_path.path.segments.last() {
+                                if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                                    if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                        quote! { #ty }
+                                    } else {
+                                        quote! { #attr_ty }
+                                    }
+                                } else {
+                                    quote! { #attr_ty }
+                                }
+                            } else {
+                                quote! { #attr_ty }
+                            }
+                        } else {
+                            quote! { #attr_ty }
+                        };
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #inner_ty {
+                                std::clone::Clone::clone(&*self.#attr_name_ident)
+                            }
+                        }
+                    } else {
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #attr_ty {
+                                *self.#attr_name_ident
+                            }
                         }
                     }
                 }
@@ -437,6 +616,70 @@ fn generate_tuple_getter_setter(
                         #[inline(always)]
                         #vis fn #get_name(&self) -> #attr_ty {
                             self.#field_index.clone()
+                        }
+                    }
+                }
+                ReturnType::Deref => {
+                    if is_option_type(attr_ty) {
+                        let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
+                            if let Some(segment) = type_path.path.segments.last() {
+                                if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                                    if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                        quote! { #ty }
+                                    } else {
+                                        quote! { #attr_ty }
+                                    }
+                                } else {
+                                    quote! { #attr_ty }
+                                }
+                            } else {
+                                quote! { #attr_ty }
+                            }
+                        } else {
+                            quote! { #attr_ty }
+                        };
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #inner_ty {
+                                match &self.#field_index {
+                                    Some(value) => *value,
+                                    None => panic!("Cannot dereference None value"),
+                                }
+                            }
+                        }
+                    } else if is_result_type(attr_ty) {
+                        let inner_ty: TokenStream2 = if let Type::Path(type_path) = attr_ty {
+                            if let Some(segment) = type_path.path.segments.last() {
+                                if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                                    if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                        quote! { #ty }
+                                    } else {
+                                        quote! { #attr_ty }
+                                    }
+                                } else {
+                                    quote! { #attr_ty }
+                                }
+                            } else {
+                                quote! { #attr_ty }
+                            }
+                        } else {
+                            quote! { #attr_ty }
+                        };
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #inner_ty {
+                                match &self.#field_index {
+                                    Ok(value) => (*value).clone(),
+                                    Err(e) => panic!("Cannot dereference Err value: {:?}", e),
+                                }
+                            }
+                        }
+                    } else {
+                        quote! {
+                            #[inline(always)]
+                            #vis fn #get_name(&self) -> #attr_ty {
+                                self.#field_index
+                            }
                         }
                     }
                 }

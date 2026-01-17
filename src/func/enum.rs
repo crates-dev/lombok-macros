@@ -51,6 +51,7 @@ pub(crate) enum TraitType {
 /// # Variants
 /// - `Reference`: Returns a reference to the field value (`&T`).
 /// - `Clone`: Returns a cloned copy of the field value (`T`).
+/// - `Deref`: Returns a dereferenced value of the field (`*field`), with match control for Option/Result.
 /// - `Default`: Uses default behavior (reference for non-Option/Result, cloned for Option/Result).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ReturnType {
@@ -58,6 +59,8 @@ pub(crate) enum ReturnType {
     Reference,
     /// Returns a cloned copy of the field value (`T`).
     Clone,
+    /// Returns a dereferenced value of the field (`*field`), with match control for Option/Result.
+    Deref,
     /// Uses default behavior (reference for non-Option/Result, cloned for Option/Result).
     Default,
 }
