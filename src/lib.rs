@@ -80,11 +80,11 @@ pub(crate) use syn::{
 /// struct BasicStruct {
 ///     #[get(pub)]
 ///     name: String,
-///     #[get(pub, reference)]
+///     #[get(pub, type(reference))]
 ///     description: String,
-///     #[get(pub, clone)]
+///     #[get(pub, type(clone))]
 ///     data: Vec<i32>,
-///     #[get(pub, copy)]
+///     #[get(pub, type(copy))]
 ///     count: i32,
 /// }
 /// let basic = BasicStruct {
@@ -112,7 +112,7 @@ pub(crate) use syn::{
 /// struct OptionalStruct {
 ///     #[get(pub)]
 ///     optional: Option<String>,
-///     #[get(pub, reference)]
+///     #[get(pub, type(reference))]
 ///     optional_ref: Option<String>,
 ///     #[get(pub)]
 ///     result: Result<String, String>,
@@ -138,7 +138,7 @@ pub(crate) use syn::{
 /// #[derive(Getter, Clone)]
 /// struct TupleStruct(
 ///     #[get(pub)] String,
-///     #[get(pub, clone)] Vec<i32>,
+///     #[get(pub, type(clone))] Vec<i32>,
 /// );
 /// let tuple = TupleStruct("hello".to_string(), vec![1, 2, 3]);
 /// let field0: &String = tuple.get_0();
@@ -154,11 +154,11 @@ pub(crate) use syn::{
 ///
 /// #[derive(Getter, Clone)]
 /// struct CopyStruct {
-///     #[get(pub, copy)]
+///     #[get(pub, type(copy))]
 ///     value: i32,
-///     #[get(pub, copy)]
+///     #[get(pub, type(copy))]
 ///     flag: bool,
-///     #[get(pub, copy)]
+///     #[get(pub, type(copy))]
 ///     count: u64,
 /// }
 /// let copy_struct = CopyStruct {
@@ -181,15 +181,15 @@ pub(crate) use syn::{
 ///
 /// #[derive(Getter, Clone)]
 /// struct DerefStruct {
-///     #[get(deref)]
+///     #[get(pub, type(deref))]
 ///     optional: Option<bool>,
-///     #[get(pub, deref)]
+///     #[get(pub, type(deref))]
 ///     result: Result<String, &'static str>,
-///     #[get(pub, deref)]
+///     #[get(pub, type(deref))]
 ///     boxed_value: Box<i32>,
-///     #[get(pub, deref)]
+///     #[get(pub, type(deref))]
 ///     rc_value: std::rc::Rc<String>,
-///     #[get(pub, deref)]
+///     #[get(pub, type(deref))]
 ///     arc_value: std::sync::Arc<Vec<u8>>,
 /// }
 /// let deref_struct = DerefStruct {
@@ -220,7 +220,7 @@ pub(crate) use syn::{
 /// struct GenericStruct<'a, T: Clone> {
 ///     #[get(pub)]
 ///     value: &'a T,
-///     #[get(pub, clone)]
+///     #[get(pub, type(clone))]
 ///     owned: T,
 /// }
 /// let data = 42;
@@ -406,10 +406,10 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///     #[get(pub)]
 ///     #[set(pub)]
 ///     name: String,
-///     #[get(pub, clone)]
+///     #[get(pub, type(clone))]
 ///     #[set(pub)]
 ///     email: String,
-///     #[get(pub, copy)]
+///     #[get(pub, type(copy))]
 ///     age: u32,
 ///     #[get_mut(pub)]
 ///     mutable_age: u32,
@@ -453,7 +453,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///     #[get(pub)]
 ///     #[set(pub)]
 ///     optional: Option<String>,
-///     #[get(pub, reference)]
+///     #[get(pub, type(reference))]
 ///     result: Result<i32, String>,
 ///     #[get(pub(crate))]
 ///     #[set(private)]
@@ -484,7 +484,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// #[derive(Data, Debug, Clone)]
 /// struct Point(
 ///     #[get(pub)] f64,
-///     #[get(pub, clone)]
+///     #[get(pub, type(clone))]
 ///     #[set(pub)] f64,
 /// );
 ///

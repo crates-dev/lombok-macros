@@ -44,14 +44,20 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                     if config.visibility == Visibility::Public {
                         config.visibility = Visibility::PublicSuper;
                     }
-                } else if ReturnType::is_known(&ident_str) && config.return_type.is_default() {
-                    config.return_type = ident_str.parse::<ReturnType>().unwrap_or_default();
                 } else if ident_str == CUSTOM_TYPE {
                     if let Some(TokenTree2::Group(group)) = tokens_iter.peek() {
                         if group.delimiter() == Delimiter::Parenthesis {
-                            let type_group = tokens_iter.next().unwrap();
+                            let type_group: TokenTree2 = tokens_iter.next().unwrap();
                             if let TokenTree2::Group(group) = type_group {
-                                config.param_type_override = Some(group.stream());
+                                let type_content: String = group.stream().to_string();
+                                if ReturnType::is_known(&type_content)
+                                    && config.return_type.is_default()
+                                {
+                                    config.return_type =
+                                        type_content.parse::<ReturnType>().unwrap_or_default();
+                                } else {
+                                    config.param_type_override = Some(group.stream());
+                                }
                             }
                         }
                     }
