@@ -116,38 +116,6 @@ impl FuncType {
     }
 }
 
-impl Default for TraitType {
-    /// Returns the default trait type (None).
-    ///
-    /// # Returns
-    ///
-    /// - `TraitType` - The default trait type (None).
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-impl FromStr for TraitType {
-    type Err = ();
-
-    /// Parses a string into a TraitType.
-    ///
-    /// # Arguments
-    ///
-    /// - `&str` - The string to parse.
-    ///
-    /// # Returns
-    ///
-    /// - `Result<TraitType, ()>` - The parsed trait type or an error.
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "AsRef" => Ok(Self::AsRef),
-            "Into" => Ok(Self::Into),
-            _ => Err(()),
-        }
-    }
-}
-
 impl ReturnType {
     /// Checks if the return type is `Default`.
     ///
