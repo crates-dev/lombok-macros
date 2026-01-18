@@ -165,11 +165,11 @@ struct EdgeCaseTest {
 
 #[derive(Data, Debug, Clone)]
 struct CopyTest {
-    #[get(pub, type(copy))]
+    #[get(skip, pub, type(copy))]
     value: i32,
-    #[get(pub, type(copy))]
+    #[get(pub(crate), type(copy))]
     flag: bool,
-    #[get(pub, type(copy))]
+    #[get(private, type(copy))]
     count: u64,
 }
 
