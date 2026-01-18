@@ -25,9 +25,7 @@ pub(crate) fn parse_new_visibility(input: &DeriveInput) -> Visibility {
                                 match parsed_visibility {
                                     Visibility::Public => {
                                         if let Some(TokenTree2::Group(group)) = iter.next() {
-                                            if group.delimiter()
-                                                == proc_macro2::Delimiter::Parenthesis
-                                            {
+                                            if group.delimiter() == Delimiter::Parenthesis {
                                                 visibility = group.stream().to_string().parse::<Visibility>().expect("Failed to parse visibility from group tokens");
                                             }
                                         } else {
