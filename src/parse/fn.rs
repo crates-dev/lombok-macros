@@ -19,7 +19,30 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                         config.func_type = ident_str.parse::<FuncType>().unwrap_or_default();
                     }
                 } else if ident_str == SKIP {
-                    config.skip = true;
+                    match config.func_type {
+                        FuncType::Get => {
+                            config.skip_flags.insert(FuncType::Get);
+                        }
+                        FuncType::GetMut => {
+                            config.skip_flags.insert(FuncType::GetMut);
+                        }
+                        FuncType::Set => {
+                            config.skip_flags.insert(FuncType::Set);
+                        }
+                        FuncType::Debug => {
+                            config.skip_flags.insert(FuncType::Debug);
+                        }
+                        FuncType::New => {
+                            config.skip_flags.insert(FuncType::New);
+                        }
+                        FuncType::Unknown => {
+                            config.skip_flags.insert(FuncType::Get);
+                            config.skip_flags.insert(FuncType::GetMut);
+                            config.skip_flags.insert(FuncType::Set);
+                            config.skip_flags.insert(FuncType::Debug);
+                            config.skip_flags.insert(FuncType::New);
+                        }
+                    }
                 } else if ident_str == PUB {
                     let mut lookahead: Peekable<IntoIter> = tokens_iter.clone();
                     if let Some(TokenTree2::Group(group)) = lookahead.next() {

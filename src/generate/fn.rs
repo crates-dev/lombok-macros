@@ -547,24 +547,36 @@ fn generate_named_getter_setter(
     let set_name: Ident = format_ident!("{}{}", SET_METHOD_PREFIX, clean_attr_name);
     let mut generated: TokenStream2 = quote! {};
     let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
+    let mut shared_config: Config = Config::default();
     for attr in &field.attrs {
         let config: Config = analyze_attributes(attr.to_token_stream());
         let name: String = attr_name_ident.to_string();
-        config_map.entry(name).or_default().push(config);
+        config_map.entry(name).or_default().push(config.clone());
+        for skip_flag in &config.skip_flags {
+            shared_config.skip_flags.insert(*skip_flag);
+            shared_config.added_flags.insert(*skip_flag);
+        }
     }
-    let mut has_add_get: bool = false;
-    let mut has_add_get_mut: bool = false;
-    let mut has_add_set: bool = false;
     for config_list in config_map.values() {
         for config in config_list {
-            if has_add_get && has_add_get_mut && has_add_set {
+            if shared_config.added_flags.contains(&FuncType::Get)
+                && shared_config.added_flags.contains(&FuncType::GetMut)
+                && shared_config.added_flags.contains(&FuncType::Set)
+            {
                 break;
             }
-            if config.skip && config.func_type.is_unknown() {
+            if (config.skip_flags.contains(&FuncType::Get)
+                || config.skip_flags.contains(&FuncType::GetMut)
+                || config.skip_flags.contains(&FuncType::Set))
+                && config.func_type.is_unknown()
+            {
                 continue;
             }
             let vis: TokenStream2 = config.visibility.to_token_stream();
-            if config.func_type.is_get() && !config.skip && !has_add_get {
+            if config.func_type.is_get()
+                && !config.skip_flags.contains(&FuncType::Get)
+                && !shared_config.added_flags.contains(&FuncType::Get)
+            {
                 generated.extend(build_named_get_quote(
                     need_getter,
                     vis.clone(),
@@ -580,9 +592,12 @@ fn generate_named_getter_setter(
                     attr_name_ident,
                     attr_ty,
                 ));
-                has_add_get = true;
+                shared_config.added_flags.insert(FuncType::Get);
             }
-            if config.func_type.is_get_mut() && !config.skip && !has_add_get_mut {
+            if config.func_type.is_get_mut()
+                && !config.skip_flags.contains(&FuncType::GetMut)
+                && !shared_config.added_flags.contains(&FuncType::GetMut)
+            {
                 generated.extend(build_named_get_mut_quote(
                     need_getter_mut,
                     vis.clone(),
@@ -590,9 +605,12 @@ fn generate_named_getter_setter(
                     attr_name_ident,
                     attr_ty,
                 ));
-                has_add_get_mut = true;
+                shared_config.added_flags.insert(FuncType::GetMut);
             }
-            if config.func_type.is_set() && !config.skip && !has_add_set {
+            if config.func_type.is_set()
+                && !config.skip_flags.contains(&FuncType::Set)
+                && !shared_config.added_flags.contains(&FuncType::Set)
+            {
                 generated.extend(build_named_set_quote(
                     need_setter,
                     vis.clone(),
@@ -601,42 +619,23 @@ fn generate_named_getter_setter(
                     attr_ty,
                     config.param_type_override.as_ref(),
                 ));
-                has_add_set = true;
+                shared_config.added_flags.insert(FuncType::Set);
             }
         }
     }
-    if !has_add_get || !has_add_get_mut || !has_add_set {
-        let config: Config = Config::default();
-        let vis: TokenStream2 = config.visibility.to_token_stream();
-        let mut get_skipped: bool = false;
-        let mut get_mut_skipped: bool = false;
-        let mut set_skipped: bool = false;
-        for config_list in config_map.values() {
-            for config in config_list {
-                if config.skip {
-                    match config.func_type {
-                        FuncType::Get => get_skipped = true,
-                        FuncType::GetMut => get_mut_skipped = true,
-                        FuncType::Set => set_skipped = true,
-                        FuncType::Debug => {}
-                        FuncType::New => {}
-                        FuncType::Unknown => {
-                            get_skipped = true;
-                            get_mut_skipped = true;
-                            set_skipped = true;
-                        }
-                    }
-                }
-            }
-        }
-        if !has_add_get && !get_skipped {
+    if !shared_config.added_flags.contains(&FuncType::Get)
+        || !shared_config.added_flags.contains(&FuncType::GetMut)
+        || !shared_config.added_flags.contains(&FuncType::Set)
+    {
+        let vis: TokenStream2 = shared_config.visibility.to_token_stream();
+        if !shared_config.added_flags.contains(&FuncType::Get) {
             generated.extend(build_named_get_quote(
                 need_getter,
                 vis.clone(),
                 &get_name,
                 attr_name_ident,
                 attr_ty,
-                config.return_type,
+                shared_config.return_type,
             ));
             generated.extend(build_named_try_get_quote(
                 need_getter,
@@ -646,7 +645,7 @@ fn generate_named_getter_setter(
                 attr_ty,
             ));
         }
-        if !has_add_get_mut && !get_mut_skipped {
+        if !shared_config.added_flags.contains(&FuncType::GetMut) {
             generated.extend(build_named_get_mut_quote(
                 need_getter_mut,
                 vis.clone(),
@@ -655,7 +654,7 @@ fn generate_named_getter_setter(
                 attr_ty,
             ));
         }
-        if !has_add_set && !set_skipped {
+        if !shared_config.added_flags.contains(&FuncType::Set) {
             generated.extend(build_named_set_quote(
                 need_setter,
                 vis.clone(),
@@ -892,24 +891,36 @@ fn generate_tuple_getter_setter(
     let field_index: Index = Index::from(index);
     let mut generated: TokenStream2 = quote! {};
     let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
+    let mut shared_config: Config = Config::default();
     for attr in &field.attrs {
         let config: Config = analyze_attributes(attr.to_token_stream());
         let name: String = index.to_string();
-        config_map.entry(name).or_default().push(config);
+        config_map.entry(name).or_default().push(config.clone());
+        for skip_flag in &config.skip_flags {
+            shared_config.skip_flags.insert(*skip_flag);
+            shared_config.added_flags.insert(*skip_flag);
+        }
     }
-    let mut has_add_get: bool = false;
-    let mut has_add_get_mut: bool = false;
-    let mut has_add_set: bool = false;
     for config_list in config_map.values() {
         for config in config_list {
-            if has_add_get && has_add_get_mut && has_add_set {
+            if shared_config.added_flags.contains(&FuncType::Get)
+                && shared_config.added_flags.contains(&FuncType::GetMut)
+                && shared_config.added_flags.contains(&FuncType::Set)
+            {
                 break;
             }
-            if config.skip && config.func_type.is_unknown() {
+            if (config.skip_flags.contains(&FuncType::Get)
+                || config.skip_flags.contains(&FuncType::GetMut)
+                || config.skip_flags.contains(&FuncType::Set))
+                && config.func_type.is_unknown()
+            {
                 continue;
             }
             let vis: TokenStream2 = config.visibility.to_token_stream();
-            if config.func_type.is_get() && !config.skip && !has_add_get {
+            if config.func_type.is_get()
+                && !config.skip_flags.contains(&FuncType::Get)
+                && !shared_config.added_flags.contains(&FuncType::Get)
+            {
                 generated.extend(build_tuple_get_quote(
                     need_getter,
                     vis.clone(),
@@ -925,9 +936,12 @@ fn generate_tuple_getter_setter(
                     &field_index,
                     attr_ty,
                 ));
-                has_add_get = true;
+                shared_config.added_flags.insert(FuncType::Get);
             }
-            if config.func_type.is_get_mut() && !config.skip && !has_add_get_mut {
+            if config.func_type.is_get_mut()
+                && !config.skip_flags.contains(&FuncType::GetMut)
+                && !shared_config.added_flags.contains(&FuncType::GetMut)
+            {
                 generated.extend(build_tuple_get_mut_quote(
                     need_getter_mut,
                     vis.clone(),
@@ -935,9 +949,12 @@ fn generate_tuple_getter_setter(
                     &field_index,
                     attr_ty,
                 ));
-                has_add_get_mut = true;
+                shared_config.added_flags.insert(FuncType::GetMut);
             }
-            if config.func_type.is_set() && !config.skip && !has_add_set {
+            if config.func_type.is_set()
+                && !config.skip_flags.contains(&FuncType::Set)
+                && !shared_config.added_flags.contains(&FuncType::Set)
+            {
                 generated.extend(build_tuple_set_quote(
                     need_setter,
                     vis.clone(),
@@ -946,42 +963,23 @@ fn generate_tuple_getter_setter(
                     attr_ty,
                     config.param_type_override.as_ref(),
                 ));
-                has_add_set = true;
+                shared_config.added_flags.insert(FuncType::Set);
             }
         }
     }
-    if !has_add_get || !has_add_get_mut || !has_add_set {
-        let config: Config = Config::default();
-        let vis: TokenStream2 = config.visibility.to_token_stream();
-        let mut get_skipped: bool = false;
-        let mut get_mut_skipped: bool = false;
-        let mut set_skipped: bool = false;
-        for config_list in config_map.values() {
-            for config in config_list {
-                if config.skip {
-                    match config.func_type {
-                        FuncType::Get => get_skipped = true,
-                        FuncType::GetMut => get_mut_skipped = true,
-                        FuncType::Set => set_skipped = true,
-                        FuncType::Debug => {}
-                        FuncType::New => {}
-                        FuncType::Unknown => {
-                            get_skipped = true;
-                            get_mut_skipped = true;
-                            set_skipped = true;
-                        }
-                    }
-                }
-            }
-        }
-        if !get_skipped && !has_add_get {
+    if !shared_config.added_flags.contains(&FuncType::Get)
+        || !shared_config.added_flags.contains(&FuncType::GetMut)
+        || !shared_config.added_flags.contains(&FuncType::Set)
+    {
+        let vis: TokenStream2 = shared_config.visibility.to_token_stream();
+        if !shared_config.added_flags.contains(&FuncType::Get) {
             generated.extend(build_tuple_get_quote(
                 need_getter,
                 vis.clone(),
                 &get_name,
                 &field_index,
                 attr_ty,
-                config.return_type,
+                shared_config.return_type,
             ));
             generated.extend(build_tuple_try_get_quote(
                 need_getter,
@@ -991,7 +989,7 @@ fn generate_tuple_getter_setter(
                 attr_ty,
             ));
         }
-        if !get_mut_skipped && !has_add_get_mut {
+        if !shared_config.added_flags.contains(&FuncType::GetMut) {
             generated.extend(build_tuple_get_mut_quote(
                 need_getter_mut,
                 vis.clone(),
@@ -1000,7 +998,7 @@ fn generate_tuple_getter_setter(
                 attr_ty,
             ));
         }
-        if !set_skipped && !has_add_set {
+        if !shared_config.added_flags.contains(&FuncType::Set) {
             generated.extend(build_tuple_set_quote(
                 need_setter,
                 vis.clone(),
@@ -1249,7 +1247,9 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                             let mut should_skip: bool = false;
                             for attr in &field.attrs {
                                 let config: Config = analyze_attributes(attr.to_token_stream());
-                                if config.func_type.is_debug() && config.skip {
+                                if config.func_type.is_debug()
+                                    && config.skip_flags.contains(&FuncType::Debug)
+                                {
                                     should_skip = true;
                                     break;
                                 }
@@ -1284,7 +1284,9 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                             let mut should_skip: bool = false;
                             for attr in &field.attrs {
                                 let config: Config = analyze_attributes(attr.to_token_stream());
-                                if config.func_type.is_debug() && config.skip {
+                                if config.func_type.is_debug()
+                                    && config.skip_flags.contains(&FuncType::Debug)
+                                {
                                     should_skip = true;
                                     break;
                                 }
@@ -1350,7 +1352,9 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                                     for attr in &field.attrs {
                                         let config: Config =
                                             analyze_attributes(attr.to_token_stream());
-                                        if config.func_type.is_debug() && config.skip {
+                                        if config.func_type.is_debug()
+                                            && config.skip_flags.contains(&FuncType::Debug)
+                                        {
                                             should_skip = true;
                                             break;
                                         }
@@ -1392,7 +1396,9 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                                     for attr in &field.attrs {
                                         let config: Config =
                                             analyze_attributes(attr.to_token_stream());
-                                        if config.func_type.is_debug() && config.skip {
+                                        if config.func_type.is_debug()
+                                            && config.skip_flags.contains(&FuncType::Debug)
+                                        {
                                             should_skip = true;
                                             break;
                                         }
@@ -1455,7 +1461,7 @@ fn should_skip_field_for_new(field: &Field) -> bool {
     let mut should_skip: bool = false;
     for attr in &field.attrs {
         let config: Config = analyze_attributes(attr.to_token_stream());
-        if config.func_type.is_new() && config.skip {
+        if config.func_type.is_new() && config.skip_flags.contains(&FuncType::New) {
             should_skip = true;
             break;
         }

@@ -23,7 +23,7 @@ pub(crate) use proc_macro2::{
 };
 pub(crate) use quote::{ToTokens, format_ident, quote};
 pub(crate) use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
     iter::Peekable,
     str::FromStr,

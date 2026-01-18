@@ -7,7 +7,7 @@
 /// - `Debug` - Represents a debug function.
 /// - `New` - Represents a constructor function.
 /// - `Unknown` - Represents an unknown or unspecified function type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub(crate) enum FuncType {
     /// Represents a getter function.
     Get,
