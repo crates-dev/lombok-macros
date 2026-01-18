@@ -13,10 +13,14 @@ struct LombokTest<'a, T: Clone + Debug> {
     #[get_mut(pub(crate))]
     #[set(private)]
     name: String,
+    #[get_mut(pub(crate))]
+    #[set(private)]
+    user: User,
 }
 
-#[derive(CustomDebug, Getter, New)]
+#[derive(CustomDebug, Clone, Getter, Setter, New)]
 struct User {
+    #[set(type(AsRef<str>))]
     name: String,
     #[debug(skip)]
     _password: String,
@@ -200,10 +204,15 @@ fn main() {
         opt_value: None,
         result_value: Err("error"),
         name: "test".to_string(),
+        user: User {
+            name: "Alice".to_string(),
+            _password: "secret123".to_string(),
+            email: Some("alice@ltpp.vip".to_string()),
+        },
     };
-    let name: &mut String = data.get_mut_name();
-    *name = "mut".to_string();
-    assert_eq!(data.get_name(), "mut");
+    let user: &mut User = data.get_mut_user();
+    user.set_name("Bob");
+    assert_eq!(data.get_user().get_name(), "Bob");
     let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
     data.set_list(list.clone());
     assert_eq!(*data.get_list(), list);
