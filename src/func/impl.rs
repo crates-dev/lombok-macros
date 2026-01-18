@@ -116,29 +116,6 @@ impl FuncType {
     }
 }
 
-impl ReturnType {
-    /// Checks if the return type is `Default`.
-    ///
-    /// # Returns
-    /// - `bool` - if the return type is `Default`; otherwise, `false`.
-    #[inline(always)]
-    pub(crate) fn is_default(&self) -> bool {
-        *self == ReturnType::Default
-    }
-
-    /// Checks if the given string is a known return type.
-    ///
-    /// # Arguments
-    /// - `&str` - The string to check.
-    ///
-    /// # Returns
-    /// - `bool` - if the string is a known return type; otherwise, `false`.
-    #[inline(always)]
-    pub(crate) fn is_known(s: &str) -> bool {
-        matches!(s, REFERENCE | CLONE | COPY | DEREF)
-    }
-}
-
 impl Default for ReturnType {
     /// Returns the default return type (`Default`).
     ///

@@ -49,15 +49,12 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                         if group.delimiter() == Delimiter::Parenthesis {
                             let type_group: TokenTree2 = tokens_iter.next().unwrap();
                             if let TokenTree2::Group(group) = type_group {
-                                let type_content: String = group.stream().to_string();
-                                if ReturnType::is_known(&type_content)
-                                    && config.return_type.is_default()
-                                {
-                                    config.return_type =
-                                        type_content.parse::<ReturnType>().unwrap_or_default();
-                                } else {
-                                    config.param_type_override = Some(group.stream());
-                                }
+                                config.return_type = group
+                                    .stream()
+                                    .to_string()
+                                    .parse::<ReturnType>()
+                                    .unwrap_or_default();
+                                config.param_type_override = Some(group.stream());
                             }
                         }
                     }
