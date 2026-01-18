@@ -175,3 +175,36 @@ impl FromStr for ReturnType {
         }
     }
 }
+
+/// Implements the `From<&str>` trait for `ParameterType` to parse string representations into `ParameterType` variants.
+impl From<&str> for ParameterType {
+    /// Parses a string slice into a `ParameterType`.
+    ///
+    /// # Arguments
+    ///
+    /// - `&str` - The string slice to parse.
+    ///
+    /// # Returns
+    ///
+    /// - `ParameterType` - The corresponding `ParameterType` variant.
+    #[inline(always)]
+    fn from(type_str: &str) -> Self {
+        let trimmed: &str = type_str.trim();
+        if trimmed.starts_with(AS_REF_PREFIX) && trimmed.ends_with('>') {
+            ParameterType::AsRef
+        } else if trimmed.starts_with(INTO_PREFIX) && trimmed.ends_with('>') {
+            ParameterType::Into
+        } else if trimmed.starts_with(AS_MUT_PREFIX) && trimmed.ends_with('>') {
+            ParameterType::AsMut
+        } else if trimmed.starts_with(DEREF_PREFIX) && trimmed.ends_with('>') {
+            ParameterType::Deref
+        } else if trimmed.contains('<')
+            && trimmed.contains('>')
+            && !trimmed.starts_with(IMPL_PREFIX)
+        {
+            ParameterType::Custom(trimmed.to_string())
+        } else {
+            ParameterType::Direct
+        }
+    }
+}

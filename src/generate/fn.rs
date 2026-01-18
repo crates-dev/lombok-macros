@@ -128,34 +128,6 @@ fn is_arc_type(ty: &Type) -> bool {
     }
 }
 
-/// Parses the parameter type override string into a ParameterType enum.
-///
-/// # Arguments
-///
-/// - `&str` - The string representation of the parameter type override.
-///
-/// # Returns
-///
-/// - `ParameterType` - The parsed parameter type strategy.
-fn parse_param_type_override(type_str: &str) -> ParameterType {
-    let trimmed: &str = type_str.trim();
-    
-    if trimmed.starts_with("AsRef<") && trimmed.ends_with('>') {
-        ParameterType::AsRef
-    } else if trimmed.starts_with("Into<") && trimmed.ends_with('>') {
-        ParameterType::Into
-    } else if trimmed.starts_with("AsMut<") && trimmed.ends_with('>') {
-        ParameterType::AsMut
-    } else if trimmed.starts_with("Deref<") && trimmed.ends_with('>') {
-        ParameterType::Deref
-    } else if trimmed.contains('<') && trimmed.contains('>') && !trimmed.starts_with("impl ") {
-        // Custom trait bound - store the string representation
-        ParameterType::Custom(trimmed.to_string())
-    } else {
-        ParameterType::Direct
-    }
-}
-
 /// Generates the appropriate parameter type based on the field type.
 ///
 /// # Arguments
@@ -172,8 +144,7 @@ fn generate_param_type(
 ) -> TokenStream2 {
     if let Some(override_type) = param_type_override {
         let type_str: String = override_type.to_string();
-        let param_type: ParameterType = parse_param_type_override(&type_str);
-        
+        let param_type: ParameterType = ParameterType::from(type_str.as_str());
         match param_type {
             ParameterType::AsRef => {
                 quote! { impl #override_type }
@@ -187,9 +158,7 @@ fn generate_param_type(
             ParameterType::Deref => {
                 quote! { impl #override_type }
             }
-            ParameterType::Direct => {
-                override_type.clone()
-            }
+            ParameterType::Direct => override_type.clone(),
             ParameterType::Custom(custom_tokens) => {
                 quote! { impl #custom_tokens }
             }
@@ -215,13 +184,15 @@ fn generate_assignment(
 ) -> TokenStream2 {
     if let Some(override_type) = param_type_override {
         let type_str: String = override_type.to_string();
-        let param_type: ParameterType = parse_param_type_override(&type_str);
-        
+        let param_type: ParameterType = ParameterType::from(type_str.as_str());
         match param_type {
             ParameterType::AsRef => {
                 quote! { self.#field_ident = val.as_ref().to_owned(); }
             }
-            ParameterType::Into | ParameterType::AsMut | ParameterType::Deref | ParameterType::Custom(_) => {
+            ParameterType::Into
+            | ParameterType::AsMut
+            | ParameterType::Deref
+            | ParameterType::Custom(_) => {
                 quote! { self.#field_ident = val.into(); }
             }
             ParameterType::Direct => {
@@ -249,13 +220,16 @@ fn generate_assignment_tuple(
 ) -> TokenStream2 {
     if let Some(override_type) = param_type_override {
         let type_str: String = override_type.to_string();
-        let param_type: ParameterType = parse_param_type_override(&type_str);
+        let param_type: ParameterType = ParameterType::from(type_str.as_str());
 
         match param_type {
             ParameterType::AsRef => {
                 quote! { self.#field_index = val.as_ref().to_owned(); }
             }
-            ParameterType::Into | ParameterType::AsMut | ParameterType::Deref | ParameterType::Custom(_) => {
+            ParameterType::Into
+            | ParameterType::AsMut
+            | ParameterType::Deref
+            | ParameterType::Custom(_) => {
                 quote! { self.#field_index = val.into(); }
             }
             ParameterType::Direct => {

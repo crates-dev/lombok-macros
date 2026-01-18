@@ -42,3 +42,18 @@ pub const DEREF: &str = "deref";
 
 /// Constant for type specification.
 pub const CUSTOM_TYPE: &str = "type";
+
+/// Constant for AsRef trait bound prefix.
+pub const AS_REF_PREFIX: &str = "AsRef<";
+
+/// Constant for Into trait bound prefix.
+pub const INTO_PREFIX: &str = "Into<";
+
+/// Constant for AsMut trait bound prefix.
+pub const AS_MUT_PREFIX: &str = "AsMut<";
+
+/// Constant for Deref trait bound prefix.
+pub const DEREF_PREFIX: &str = "Deref<";
+
+/// Constant for impl keyword prefix.
+pub const IMPL_PREFIX: &str = "impl ";
