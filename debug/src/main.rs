@@ -38,11 +38,11 @@ struct TraitTestStruct {
     #[set(pub, type(AsRef<str>))]
     name: String,
     #[get(clone)]
-    #[set(pub, Into)]
+    #[set(pub, type(Into<i32>))]
     value: i32,
     #[set(pub, type(AsRef<[u8]>))]
     data: Vec<u8>,
-    #[set(pub, Into)]
+    #[set(pub, type(Into<Vec<String>>))]
     items: Vec<String>,
 }
 
@@ -187,7 +187,7 @@ struct AllSkipped {
 #[derive(Data, Debug, Clone)]
 struct MultiAttributes {
     #[get(pub, clone)]
-    #[set(pub, Into)]
+    #[set(pub, type(Into<Vec<String>>))]
     complex_field: Vec<String>,
 }
 

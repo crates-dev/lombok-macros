@@ -287,6 +287,15 @@ pub fn getter_mut(input: TokenStream) -> TokenStream {
 /// - `#[set(pub(crate))]` - Generates a crate-visible setter
 /// - `#[set(pub(super))]` - Generates a setter visible to parent module
 /// - `#[set(private)]` - Generates a private setter
+/// - `#[set(pub, type(AsRef<str>))]` - Generates a setter with custom parameter type conversion
+/// - `#[set(pub, Into)]` - Generates a setter using `impl Into<T>` trait bound
+/// - `#[set(pub, type(AsRef<[u8]>))]` - Generates a setter with `impl AsRef<[u8]>` parameter type
+///
+/// # Parameter Type Conversion
+/// Setters support flexible parameter type conversion through trait bounds:
+/// - `type(AsRef<T>)` - Accepts any type implementing `AsRef<T>` and converts using `.as_ref().to_owned()`
+/// - `type(Into<T>)` - Accepts any type implementing `Into<T>` and converts using `.into()`
+/// - `type(CustomTrait<T>)` - Accepts any type implementing the specified custom trait bound
 ///
 /// # Examples
 ///
@@ -315,6 +324,36 @@ pub fn getter_mut(input: TokenStream) -> TokenStream {
 /// assert_eq!(basic.value, 42);
 /// ```
 ///
+/// ## Parameter Type Conversion
+///
+/// ```rust
+/// use lombok_macros::*;
+///
+/// #[derive(Setter, Debug, Clone)]
+/// struct ConversionStruct {
+///     #[set(pub, type(AsRef<str>))]
+///     name: String,
+///     #[set(pub, type(Into<i32>))]
+///     value: i32,
+///     #[set(pub, type(AsRef<[u8]>))]
+///     data: Vec<u8>,
+/// }
+///
+/// let mut conversion = ConversionStruct {
+///     name: "initial".to_string(),
+///     value: 0,
+///     data: vec![1, 2, 3],
+/// };
+///
+/// conversion.set_name("updated");
+/// assert_eq!(conversion.name, "updated");
+///
+/// conversion.set_value(1u8);
+/// assert_eq!(conversion.value, 1);
+///
+/// conversion.set_data(&[4, 5, 6]);
+/// assert_eq!(conversion.data, vec![4, 5, 6]);
+/// ```
 ///
 /// ## Tuple Structs
 ///
@@ -346,7 +385,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// # Supported Attributes
 /// - `#[get(...)]` - Controls getter generation (supports `reference`, `clone`, `copy`, `deref` options)
 /// - `#[get_mut(...)]` - Controls mutable getter generation
-/// - `#[set(...)]` - Controls setter generation
+/// - `#[set(...)]` - Controls setter generation (supports parameter type conversion with `type(AsRef<T>)`, `Into`, etc.)
 ///
 /// # Visibility Control
 /// Each attribute supports the same visibility options:
