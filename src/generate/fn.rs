@@ -549,9 +549,6 @@ fn generate_named_getter_setter(
     let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
     for attr in &field.attrs {
         let config: Config = analyze_attributes(attr.to_token_stream());
-        if config.need_skip() {
-            return generated;
-        }
         let name: String = attr_name_ident.to_string();
         config_map.entry(name).or_default().push(config);
     }
@@ -611,7 +608,28 @@ fn generate_named_getter_setter(
     if !has_add_get || !has_add_get_mut || !has_add_set {
         let config: Config = Config::default();
         let vis: TokenStream2 = config.visibility.to_token_stream();
-        if !has_add_get {
+        let mut get_skipped: bool = false;
+        let mut get_mut_skipped: bool = false;
+        let mut set_skipped: bool = false;
+        for config_list in config_map.values() {
+            for config in config_list {
+                if config.skip {
+                    match config.func_type {
+                        FuncType::Get => get_skipped = true,
+                        FuncType::GetMut => get_mut_skipped = true,
+                        FuncType::Set => set_skipped = true,
+                        FuncType::Debug => {}
+                        FuncType::New => {}
+                        FuncType::Unknown => {
+                            get_skipped = true;
+                            get_mut_skipped = true;
+                            set_skipped = true;
+                        }
+                    }
+                }
+            }
+        }
+        if !has_add_get && !get_skipped {
             generated.extend(build_named_get_quote(
                 need_getter,
                 vis.clone(),
@@ -628,7 +646,7 @@ fn generate_named_getter_setter(
                 attr_ty,
             ));
         }
-        if !has_add_get_mut {
+        if !has_add_get_mut && !get_mut_skipped {
             generated.extend(build_named_get_mut_quote(
                 need_getter_mut,
                 vis.clone(),
@@ -637,7 +655,7 @@ fn generate_named_getter_setter(
                 attr_ty,
             ));
         }
-        if !has_add_set {
+        if !has_add_set && !set_skipped {
             generated.extend(build_named_set_quote(
                 need_setter,
                 vis.clone(),
@@ -876,9 +894,6 @@ fn generate_tuple_getter_setter(
     let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
     for attr in &field.attrs {
         let config: Config = analyze_attributes(attr.to_token_stream());
-        if config.need_skip() {
-            return generated;
-        }
         let name: String = index.to_string();
         config_map.entry(name).or_default().push(config);
     }
@@ -938,7 +953,28 @@ fn generate_tuple_getter_setter(
     if !has_add_get || !has_add_get_mut || !has_add_set {
         let config: Config = Config::default();
         let vis: TokenStream2 = config.visibility.to_token_stream();
-        if !has_add_get {
+        let mut get_skipped: bool = false;
+        let mut get_mut_skipped: bool = false;
+        let mut set_skipped: bool = false;
+        for config_list in config_map.values() {
+            for config in config_list {
+                if config.skip {
+                    match config.func_type {
+                        FuncType::Get => get_skipped = true,
+                        FuncType::GetMut => get_mut_skipped = true,
+                        FuncType::Set => set_skipped = true,
+                        FuncType::Debug => {}
+                        FuncType::New => {}
+                        FuncType::Unknown => {
+                            get_skipped = true;
+                            get_mut_skipped = true;
+                            set_skipped = true;
+                        }
+                    }
+                }
+            }
+        }
+        if !get_skipped && !has_add_get {
             generated.extend(build_tuple_get_quote(
                 need_getter,
                 vis.clone(),
@@ -955,7 +991,7 @@ fn generate_tuple_getter_setter(
                 attr_ty,
             ));
         }
-        if !has_add_get_mut {
+        if !get_mut_skipped && !has_add_get_mut {
             generated.extend(build_tuple_get_mut_quote(
                 need_getter_mut,
                 vis.clone(),
@@ -964,7 +1000,7 @@ fn generate_tuple_getter_setter(
                 attr_ty,
             ));
         }
-        if !has_add_set {
+        if !set_skipped && !has_add_set {
             generated.extend(build_tuple_set_quote(
                 need_setter,
                 vis.clone(),
