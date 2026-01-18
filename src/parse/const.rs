@@ -57,3 +57,9 @@ pub const DEREF_PREFIX: &str = "Deref<";
 
 /// Constant for impl keyword prefix.
 pub const IMPL_PREFIX: &str = "impl ";
+
+/// Constant for opening angle bracket character.
+pub const OPEN_BRACKET: char = '<';
+
+/// Constant for closing angle bracket character.
+pub const CLOSE_BRACKET: char = '>';

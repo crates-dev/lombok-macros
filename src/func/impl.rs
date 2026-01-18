@@ -190,16 +190,16 @@ impl From<&str> for ParameterType {
     #[inline(always)]
     fn from(type_str: &str) -> Self {
         let trimmed: &str = type_str.trim();
-        if trimmed.starts_with(AS_REF_PREFIX) && trimmed.ends_with('>') {
+        if trimmed.starts_with(AS_REF_PREFIX) && trimmed.ends_with(CLOSE_BRACKET) {
             ParameterType::AsRef
-        } else if trimmed.starts_with(INTO_PREFIX) && trimmed.ends_with('>') {
+        } else if trimmed.starts_with(INTO_PREFIX) && trimmed.ends_with(CLOSE_BRACKET) {
             ParameterType::Into
-        } else if trimmed.starts_with(AS_MUT_PREFIX) && trimmed.ends_with('>') {
+        } else if trimmed.starts_with(AS_MUT_PREFIX) && trimmed.ends_with(CLOSE_BRACKET) {
             ParameterType::AsMut
-        } else if trimmed.starts_with(DEREF_PREFIX) && trimmed.ends_with('>') {
+        } else if trimmed.starts_with(DEREF_PREFIX) && trimmed.ends_with(CLOSE_BRACKET) {
             ParameterType::Deref
-        } else if trimmed.contains('<')
-            && trimmed.contains('>')
+        } else if trimmed.contains(OPEN_BRACKET)
+            && trimmed.contains(CLOSE_BRACKET)
             && !trimmed.starts_with(IMPL_PREFIX)
         {
             ParameterType::Custom(trimmed.to_string())
