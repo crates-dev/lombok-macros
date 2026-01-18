@@ -19,10 +19,15 @@ pub(crate) use visibility::*;
 
 pub(crate) use proc_macro::TokenStream;
 pub(crate) use proc_macro2::{
-    TokenStream as TokenStream2, TokenTree as TokenTree2, token_stream::IntoIter,
+    Delimiter, TokenStream as TokenStream2, TokenTree as TokenTree2, token_stream::IntoIter,
 };
 pub(crate) use quote::{ToTokens, format_ident, quote};
-pub(crate) use std::{collections::HashMap, str::FromStr};
+pub(crate) use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+    iter::Peekable,
+    str::FromStr,
+};
 pub(crate) use syn::{
     Data, DeriveInput, Field, Fields, GenericArgument,
     GenericParam::{self},
@@ -38,19 +43,19 @@ pub(crate) use syn::{
 /// with support for Option and Result types.
 ///
 /// # Supported Attributes
-/// - `#[get(pub)]`: Generates a public getter with reference return type
-/// - `#[get(pub, reference)]`: Generates a public getter that returns a reference (`&T`)
-/// - `#[get(pub, clone)]`: Generates a public getter that returns a cloned value (`T`)
-/// - `#[get(pub, copy)]`: Generates a public getter that returns a copy of the field value (`self.field`) for Copy types
-/// - `#[get(pub, deref)]`: Generates a public getter that returns a dereferenced value (`*field`) with enhanced match control for Option/Result types
-/// - `#[get(pub(crate))]`: Generates a crate-visible getter
-/// - `#[get(private)]`: Generates a private getter
+/// - `#[get(pub)]` - Generates a public getter with reference return type
+/// - `#[get(pub, reference)]` - Generates a public getter that returns a reference (`&T`)
+/// - `#[get(pub, clone)]` - Generates a public getter that returns a cloned value (`T`)
+/// - `#[get(pub, copy)]` - Generates a public getter that returns a copy of the field value (`self.field`) for Copy types
+/// - `#[get(pub, deref)]` - Generates a public getter that returns a dereferenced value (`*field`) with enhanced match control for Option/Result types
+/// - `#[get(pub(crate))]` - Generates a crate-visible getter
+/// - `#[get(private)]` - Generates a private getter
 ///
 /// # Return Type Behavior
-/// - `reference`: Returns `&T` - a reference to the field value
-/// - `clone`: Returns `T` - a cloned copy of the field value  
-/// - `copy`: Returns `T` - a copy of the field value (`self.field`) for types implementing Copy trait
-/// - `deref`: Returns dereferenced values with enhanced match control:
+/// - `reference` - Returns `&T` - a reference to the field value
+/// - `clone` - Returns `T` - a cloned copy of the field value  
+/// - `copy` - Returns `T` - a copy of the field value (`self.field`) for types implementing Copy trait
+/// - `deref` - Returns dereferenced values with enhanced match control:
 ///   - `Option<T>` → `T` with detailed None panic messages
 ///   - `Result<T, E>` → `T` with detailed Err panic messages
 ///   - `Box<T>` → `T` by dereferencing the box
@@ -239,10 +244,10 @@ pub fn getter(input: TokenStream) -> TokenStream {
 /// allowing modification of the struct's fields while maintaining proper borrowing semantics.
 ///
 /// # Supported Attributes
-/// - `#[get_mut(pub)]`: Generates a public mutable getter
-/// - `#[get_mut(pub(crate))]`: Generates a crate-visible mutable getter
-/// - `#[get_mut(pub(super))]`: Generates a mutable getter visible to parent module
-/// - `#[get_mut(private)]`: Generates a private mutable getter
+/// - `#[get_mut(pub)]` - Generates a public mutable getter
+/// - `#[get_mut(pub(crate))]` - Generates a crate-visible mutable getter
+/// - `#[get_mut(pub(super))]` - Generates a mutable getter visible to parent module
+/// - `#[get_mut(private)]` - Generates a private mutable getter
 ///
 /// # Example
 ///
@@ -278,17 +283,10 @@ pub fn getter_mut(input: TokenStream) -> TokenStream {
 /// configurable visibility and parameter type conversion options.
 ///
 /// # Supported Attributes
-/// - `#[set(pub)]`: Generates a public setter
-/// - `#[set(pub(crate))]`: Generates a crate-visible setter
-/// - `#[set(pub(super))]`: Generates a setter visible to parent module
-/// - `#[set(private)]`: Generates a private setter
-/// - `#[set(pub, Into)]`: Generates a setter that accepts any type implementing Into<T>
-/// - `#[set(pub, AsRef)]`: Generates a setter that accepts types implementing AsRef<T>
-///
-/// # Parameter Conversion
-/// - `Into`: Enables accepting any type that implements `Into<T>` for the field type
-/// - `AsRef`: Enables accepting types that implement `AsRef<T>` for the field type
-/// - Default: Accepts the exact field type
+/// - `#[set(pub)]` - Generates a public setter
+/// - `#[set(pub(crate))]` - Generates a crate-visible setter
+/// - `#[set(pub(super))]` - Generates a setter visible to parent module
+/// - `#[set(private)]` - Generates a private setter
 ///
 /// # Examples
 ///
@@ -317,29 +315,6 @@ pub fn getter_mut(input: TokenStream) -> TokenStream {
 /// assert_eq!(basic.value, 42);
 /// ```
 ///
-/// ## Trait-Based Parameter Conversion
-///
-/// ```rust
-/// use lombok_macros::*;
-///
-/// #[derive(Setter, Debug, Clone)]
-/// struct ConversionStruct {
-///     #[set(pub, Into)]
-///     name: String,
-///     #[set(pub, AsRef)]
-///     description: String,
-/// }
-/// let mut conversion_struct = ConversionStruct {
-///     name: "initial".to_string(),
-///     description: "desc".to_string(),
-/// };
-///
-/// conversion_struct.set_name("from_str");
-/// conversion_struct.set_description("from_str_ref");
-///
-/// assert_eq!(conversion_struct.name, "from_str");
-/// assert_eq!(conversion_struct.description, "from_str_ref");
-/// ```
 ///
 /// ## Tuple Structs
 ///
@@ -369,16 +344,16 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// configurable visibility and behavior options.
 ///
 /// # Supported Attributes
-/// - `#[get(...)]`: Controls getter generation (supports `reference`, `clone`, `copy`, `deref` options)
-/// - `#[get_mut(...)]`: Controls mutable getter generation
-/// - `#[set(...)]`: Controls setter generation (supports `Into`, `AsRef` options)
+/// - `#[get(...)]` - Controls getter generation (supports `reference`, `clone`, `copy`, `deref` options)
+/// - `#[get_mut(...)]` - Controls mutable getter generation
+/// - `#[set(...)]` - Controls setter generation
 ///
 /// # Visibility Control
 /// Each attribute supports the same visibility options:
-/// - `pub`: Public access
-/// - `pub(crate)`: Crate-level access
-/// - `pub(super)`: Parent module access
-/// - `private`: Private access
+/// - `pub` - Public access
+/// - `pub(crate)` - Crate-level access
+/// - `pub(super)` - Parent module access
+/// - `private` - Private access
 ///
 /// # Examples
 ///
@@ -393,7 +368,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///     #[set(pub)]
 ///     name: String,
 ///     #[get(pub, clone)]
-///     #[set(pub, Into)]
+///     #[set(pub)]
 ///     email: String,
 ///     #[get(pub, copy)]
 ///     age: u32,
@@ -416,7 +391,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// assert_eq!(age_copy, 30);
 ///
 /// user.set_name("Bob".to_string());
-/// user.set_email("bob@ltpp.vip");
+/// user.set_email("bob@ltpp.vip".to_string());
 ///
 /// let updated_email: String = user.get_email();
 /// assert_eq!(updated_email, "bob@ltpp.vip");
@@ -505,12 +480,12 @@ pub fn data(input: TokenStream) -> TokenStream {
 /// using `{:?}` in formatting macros. It uses the `inner_display_debug` function to generate
 /// the implementation with the standard debug format.
 ///
-/// # Parameters
-/// - `input`: The input token stream representing the Rust item (struct, enum, etc.)
+/// # Arguments
+/// - `input` - The input token stream representing the Rust item (struct, enum, etc.)
 ///   for which the `Display` implementation will be generated.
 ///
 /// # Returns
-/// - `TokenStream`: The generated `std::fmt::Display` implementation for the type
+/// - `TokenStream` - The generated `std::fmt::Display` implementation for the type
 ///   using the standard debug format.
 #[proc_macro_derive(DisplayDebug)]
 pub fn display_debug(input: TokenStream) -> TokenStream {
@@ -524,12 +499,12 @@ pub fn display_debug(input: TokenStream) -> TokenStream {
 /// using `{:#?}` in formatting macros. It uses the `inner_display_debug_format` function
 /// to generate the implementation with the detailed debug format.
 ///
-/// # Parameters
-/// - `input`: The input token stream representing the Rust item (struct, enum, etc.)
+/// # Arguments
+/// - `input` - The input token stream representing the Rust item (struct, enum, etc.)
 ///   for which the `Display` implementation will be generated.
 ///
 /// # Returns
-/// - `TokenStream`: The generated `std::fmt::Display` implementation for the type
+/// - `TokenStream` - The generated `std::fmt::Display` implementation for the type
 ///   using the detailed debug format.
 #[proc_macro_derive(DisplayDebugFormat)]
 pub fn display_debug_format(input: TokenStream) -> TokenStream {
@@ -544,7 +519,7 @@ pub fn display_debug_format(input: TokenStream) -> TokenStream {
 /// debug output by annotating them with `#[debug(skip)]`.
 ///
 /// # Supported Attributes
-/// - `#[debug(skip)]`: Excludes the field from the debug output
+/// - `#[debug(skip)]` - Excludes the field from the debug output
 ///
 /// # Examples
 ///
@@ -591,12 +566,12 @@ pub fn display_debug_format(input: TokenStream) -> TokenStream {
 /// assert_eq!(format!("{:?}", error), expected_error);
 /// ```
 ///
-/// # Parameters
-/// - `input`: The input token stream representing the Rust item (struct, enum, etc.)
+/// # Arguments
+/// - `input` - The input token stream representing the Rust item (struct, enum, etc.)
 ///   for which the Debug implementation will be generated.
 ///
 /// # Returns
-/// - `TokenStream`: The generated `std::fmt::Debug` implementation for the type
+/// - `TokenStream` - The generated `std::fmt::Debug` implementation for the type
 ///   that respects the `#[debug(skip)]` attribute.
 #[proc_macro_derive(CustomDebug, attributes(debug))]
 pub fn custom_debug(input: TokenStream) -> TokenStream {
@@ -610,11 +585,11 @@ pub fn custom_debug(input: TokenStream) -> TokenStream {
 /// will be initialized with their default values.
 ///
 /// # Supported Attributes
-/// - `#[new(skip)]`: Excludes the field from constructor parameters and uses default initialization
-/// - `#[new(pub)]`: Generates a public constructor  
-/// - `#[new(pub(crate))]`: Generates a crate-visible constructor  
-/// - `#[new(pub(super))]`: Generates a constructor visible to parent module  
-/// - `#[new(private)]`: Generates a private constructor
+/// - `#[new(skip)]` - Excludes the field from constructor parameters and uses default initialization
+/// - `#[new(pub)]` - Generates a public constructor  
+/// - `#[new(pub(crate))]` - Generates a crate-visible constructor  
+/// - `#[new(pub(super))]` - Generates a constructor visible to parent module  
+/// - `#[new(private)]` - Generates a private constructor
 ///
 /// # Default Behavior
 /// - The generated constructor is `pub` by default
@@ -701,11 +676,11 @@ pub fn custom_debug(input: TokenStream) -> TokenStream {
 /// assert_eq!(container.count, 0);
 /// ```
 ///
-/// # Parameters
-/// - `input`: The input token stream representing the struct for which to generate the constructor.
+/// # Arguments
+/// - `input` - The input token stream representing the struct for which to generate the constructor.
 ///
 /// # Returns
-/// - `TokenStream`: The generated constructor implementation.
+/// - `TokenStream` - The generated constructor implementation.
 #[proc_macro_derive(New, attributes(new))]
 pub fn new(input: TokenStream) -> TokenStream {
     let derive_input: DeriveInput = parse_macro_input!(input as DeriveInput);

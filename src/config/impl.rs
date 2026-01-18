@@ -2,7 +2,7 @@ use crate::*;
 
 /// Provides default configuration values for the Config struct.
 impl Default for Config {
-    /// Returns a default `Config` instance with unknown function type, skip set to false, public visibility, no trait type, and default return type.
+    /// Returns a default `Config` instance with unknown function type, skip set to false, public visibility, and default return type.
     ///
     /// # Returns
     ///
@@ -13,8 +13,8 @@ impl Default for Config {
             func_type: FuncType::Unknown,
             skip: false,
             visibility: Visibility::Public,
-            trait_type: TraitType::None,
             return_type: ReturnType::Default,
+            param_type_override: None,
         }
     }
 }

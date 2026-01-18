@@ -2,14 +2,15 @@ use crate::*;
 
 /// Parses the provided token stream and modifies the given configuration.
 ///
-/// # Parameters
-/// - `tokens`: A `TokenStream2` containing the tokens to be parsed.
-/// - `config`: A mutable reference to the `Config` structure that will be modified based on the parsed tokens.
+/// # Arguments
+/// - `tokens` - A `TokenStream2` containing the tokens to be parsed.
+/// - `config` - A mutable reference to the `Config` structure that will be modified based on the parsed tokens.
 ///
 /// # Returns
 /// - The function does not return a value. It modifies the provided `config` in place.
 pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
-    for token in tokens {
+    let mut tokens_iter: Peekable<IntoIter> = tokens.into_iter().peekable();
+    while let Some(token) = tokens_iter.next() {
         match token {
             TokenTree2::Ident(ident) => {
                 let ident_str: String = ident.to_string();
@@ -17,20 +18,43 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                     if config.func_type.is_unknown() {
                         config.func_type = ident_str.parse::<FuncType>().unwrap_or_default();
                     }
-                } else if TraitType::is_known(&ident_str) {
-                    config.trait_type = ident_str.parse::<TraitType>().unwrap_or_default();
                 } else if ident_str == SKIP {
                     config.skip = true;
                 } else if ident_str == PUBLIC {
-                    config.visibility = Visibility::Public;
+                    let mut lookahead: Peekable<IntoIter> = tokens_iter.clone();
+                    if let Some(TokenTree2::Group(group)) = lookahead.next() {
+                        if group.delimiter() == Delimiter::Parenthesis {
+                            let group_content = group.stream().to_string();
+                            if group_content == PUBLIC_CRATE {
+                                config.visibility = Visibility::PublicCrate;
+                                tokens_iter.next();
+                            } else if group_content == PUBLIC_SUPER {
+                                config.visibility = Visibility::PublicSuper;
+                                tokens_iter.next();
+                            }
+                        }
+                    } else {
+                        config.visibility = Visibility::Public;
+                    }
                 } else if ident_str == PRIVATE {
                     config.visibility = Visibility::Private;
-                } else if ident_str == PUBLIC_CRATE && config.visibility.is_public() {
+                } else if ident_str == PUBLIC_CRATE {
                     config.visibility = Visibility::PublicCrate;
-                } else if ident_str == PUBLIC_SUPER && config.visibility.is_public() {
-                    config.visibility = Visibility::PublicSuper;
+                } else if ident_str == PUBLIC_SUPER {
+                    if config.visibility == Visibility::Public {
+                        config.visibility = Visibility::PublicSuper;
+                    }
                 } else if ReturnType::is_known(&ident_str) && config.return_type.is_default() {
                     config.return_type = ident_str.parse::<ReturnType>().unwrap_or_default();
+                } else if ident_str == CUSTOM_TYPE {
+                    if let Some(TokenTree2::Group(group)) = tokens_iter.peek() {
+                        if group.delimiter() == Delimiter::Parenthesis {
+                            let type_group = tokens_iter.next().unwrap();
+                            if let TokenTree2::Group(group) = type_group {
+                                config.param_type_override = Some(group.stream());
+                            }
+                        }
+                    }
                 }
             }
             TokenTree2::Group(group) => {
@@ -43,8 +67,8 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
 
 /// Analyzes the given token stream and returns a configuration based on the attributes found.
 ///
-/// # Parameters
-/// - `tokens`: A `TokenStream2` containing the tokens representing the attributes to be analyzed.
+/// # Arguments
+/// - `tokens` - A `TokenStream2` containing the tokens representing the attributes to be analyzed.
 ///
 /// # Returns
 /// - A `Config` structure representing the parsed configuration based on the attributes in the token stream.

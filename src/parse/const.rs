@@ -39,3 +39,6 @@ pub const COPY: &str = "copy";
 
 /// Constant for return deref type.
 pub const DEREF: &str = "deref";
+
+/// Constant for type specification.
+pub const CUSTOM_TYPE: &str = "type";

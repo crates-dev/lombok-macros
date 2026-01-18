@@ -62,28 +62,6 @@ fn is_result_type(ty: &Type) -> bool {
     }
 }
 
-/// Checks if a type is a String type.
-///
-/// # Arguments
-///
-/// - `&Type` - The type to check.
-///
-/// # Returns
-///
-/// - `bool` - true if the type is String, false otherwise.
-fn is_string_type(ty: &Type) -> bool {
-    match ty {
-        Type::Path(type_path) => {
-            if let Some(segment) = type_path.path.segments.last() {
-                segment.ident == "String"
-            } else {
-                false
-            }
-        }
-        _ => false,
-    }
-}
-
 /// Checks if a type is a Box<T> type.
 ///
 /// # Arguments
@@ -150,67 +128,143 @@ fn is_arc_type(ty: &Type) -> bool {
     }
 }
 
-/// Checks if a type is a Vec<T> type.
+/// Parses the parameter type override string into a ParameterType enum.
 ///
 /// # Arguments
 ///
-/// - `&Type` - The type to check.
+/// - `&str` - The string representation of the parameter type override.
 ///
 /// # Returns
 ///
-/// - `bool` - true if the type is Vec<T>, false otherwise.
-fn is_vec_type(ty: &Type) -> bool {
-    match ty {
-        Type::Path(type_path) => {
-            if let Some(segment) = type_path.path.segments.last() {
-                segment.ident == "Vec"
-            } else {
-                false
-            }
-        }
-        _ => false,
+/// - `ParameterType` - The parsed parameter type strategy.
+fn parse_param_type_override(type_str: &str) -> ParameterType {
+    let trimmed: &str = type_str.trim();
+    
+    if trimmed.starts_with("AsRef<") && trimmed.ends_with('>') {
+        ParameterType::AsRef
+    } else if trimmed.starts_with("Into<") && trimmed.ends_with('>') {
+        ParameterType::Into
+    } else if trimmed.starts_with("AsMut<") && trimmed.ends_with('>') {
+        ParameterType::AsMut
+    } else if trimmed.starts_with("Deref<") && trimmed.ends_with('>') {
+        ParameterType::Deref
+    } else if trimmed.contains('<') && trimmed.contains('>') && !trimmed.starts_with("impl ") {
+        // Custom trait bound - store the string representation
+        ParameterType::Custom(trimmed.to_string())
+    } else {
+        ParameterType::Direct
     }
 }
 
-/// Generates the appropriate parameter type based on the field type and trait type.
+/// Generates the appropriate parameter type based on the field type.
 ///
 /// # Arguments
 ///
 /// - `&Type` - The original field type.
-/// - `TraitType` - The trait type to use for parameter conversion.
+/// - `param_type_override` - Optional custom parameter type from attribute specification.
 ///
 /// # Returns
 ///
 /// - `TokenStream2` - The generated parameter type as tokens.
-fn generate_param_type(field_type: &Type, trait_type: TraitType) -> TokenStream2 {
-    match trait_type {
-        TraitType::AsRef => {
-            // Special handling for common types
-            if is_string_type(field_type) {
-                quote! { impl AsRef<str> }
-            } else if is_vec_type(field_type) {
-                // For Vec<T>, we want AsRef<[T]>
-                if let Type::Path(type_path) = field_type {
-                    if let Some(segment) = type_path.path.segments.last() {
-                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                            if let Some(GenericArgument::Type(inner_ty)) = args.args.first() {
-                                return quote! { impl AsRef<[#inner_ty]> };
-                            }
-                        }
-                    }
-                }
-                quote! { impl AsRef<[u8]> }
-            } else {
-                // For other types, use AsRef<T>
-                quote! { impl AsRef<#field_type> }
+fn generate_param_type(
+    field_type: &Type,
+    param_type_override: Option<&TokenStream2>,
+) -> TokenStream2 {
+    if let Some(override_type) = param_type_override {
+        let type_str: String = override_type.to_string();
+        let param_type: ParameterType = parse_param_type_override(&type_str);
+        
+        match param_type {
+            ParameterType::AsRef => {
+                quote! { impl #override_type }
+            }
+            ParameterType::Into => {
+                quote! { impl #override_type }
+            }
+            ParameterType::AsMut => {
+                quote! { impl #override_type }
+            }
+            ParameterType::Deref => {
+                quote! { impl #override_type }
+            }
+            ParameterType::Direct => {
+                override_type.clone()
+            }
+            ParameterType::Custom(custom_tokens) => {
+                quote! { impl #custom_tokens }
             }
         }
-        TraitType::Into => {
-            quote! { impl Into<#field_type> }
+    } else {
+        quote! { #field_type }
+    }
+}
+
+/// Generates the appropriate assignment expression based on the parameter type.
+///
+/// # Arguments
+///
+/// - `ident` - The field identifier to assign to.
+/// - `param_type_override` - Optional custom parameter type from attribute specification.
+///
+/// # Returns
+///
+/// - `TokenStream2` - The generated assignment expression.
+fn generate_assignment(
+    field_ident: &proc_macro2::Ident,
+    param_type_override: Option<&TokenStream2>,
+) -> TokenStream2 {
+    if let Some(override_type) = param_type_override {
+        let type_str: String = override_type.to_string();
+        let param_type: ParameterType = parse_param_type_override(&type_str);
+        
+        match param_type {
+            ParameterType::AsRef => {
+                quote! { self.#field_ident = val.as_ref().to_owned(); }
+            }
+            ParameterType::Into | ParameterType::AsMut | ParameterType::Deref | ParameterType::Custom(_) => {
+                quote! { self.#field_ident = val.into(); }
+            }
+            ParameterType::Direct => {
+                quote! { self.#field_ident = val; }
+            }
         }
-        TraitType::None => {
-            quote! { #field_type }
+    } else {
+        quote! { self.#field_ident = val; }
+    }
+}
+
+/// Generates the appropriate assignment expression for tuple structs.
+///
+/// # Arguments
+///
+/// - `index` - The tuple field index to assign to.
+/// - `param_type_override` - Optional custom parameter type from attribute specification.
+///
+/// # Returns
+///
+/// - `TokenStream2` - The generated assignment expression.
+fn generate_assignment_tuple(
+    field_index: &Index,
+    param_type_override: Option<&TokenStream2>,
+) -> TokenStream2 {
+    if let Some(override_type) = param_type_override {
+        let type_str: String = override_type.to_string();
+        let param_type: ParameterType = parse_param_type_override(&type_str);
+
+        match param_type {
+            ParameterType::AsRef => {
+                quote! { self.#field_index = val.as_ref().to_owned(); }
+            }
+            ParameterType::Into | ParameterType::AsMut | ParameterType::Deref | ParameterType::Custom(_) => {
+                quote! { self.#field_index = val.into(); }
+            }
+            ParameterType::Direct => {
+                quote! { self.#field_index = val; }
+            }
         }
+    } else {
+        // Default case: direct assignment
+        quote! { self.#field_index = val; }
     }
 }
 
@@ -505,14 +559,10 @@ fn generate_named_getter_setter(
             quote! {}
         }
     };
-    let set_quote = |vis: TokenStream2, trait_type: TraitType| {
+    let set_quote = |vis: TokenStream2, param_type_override: Option<&TokenStream2>| {
         if need_setter {
-            let param_type = generate_param_type(attr_ty, trait_type);
-            let assignment = match trait_type {
-                TraitType::AsRef => quote! { self.#attr_name_ident = val.as_ref().to_owned(); },
-                TraitType::Into => quote! { self.#attr_name_ident = val.into(); },
-                TraitType::None => quote! { self.#attr_name_ident = val; },
-            };
+            let param_type: TokenStream2 = generate_param_type(attr_ty, param_type_override);
+            let assignment = generate_assignment(&attr_name_ident, param_type_override);
             quote! {
                 #[inline(always)]
                 #vis fn #set_name(&mut self, val: #param_type) -> &mut Self {
@@ -553,7 +603,7 @@ fn generate_named_getter_setter(
             }
             if config.func_type.is_set() {
                 if !config.skip && !has_add_set {
-                    generated.extend(set_quote(vis.clone(), config.trait_type));
+                    generated.extend(set_quote(vis.clone(), config.param_type_override.as_ref()));
                 }
                 has_add_set = true;
             }
@@ -572,7 +622,7 @@ fn generate_named_getter_setter(
             generated.extend(get_mut_quote(vis.clone()));
         }
         if !has_add_set {
-            generated.extend(set_quote(vis.clone(), TraitType::None));
+            generated.extend(set_quote(vis.clone(), None));
         }
     }
     generated
@@ -789,14 +839,10 @@ fn generate_tuple_getter_setter(
             quote! {}
         }
     };
-    let set_quote = |vis: TokenStream2, trait_type: TraitType| {
+    let set_quote = |vis: TokenStream2, param_type_override: Option<&TokenStream2>| {
         if need_setter {
-            let param_type = generate_param_type(attr_ty, trait_type);
-            let assignment = match trait_type {
-                TraitType::AsRef => quote! { self.#field_index = val.as_ref().to_owned(); },
-                TraitType::Into => quote! { self.#field_index = val.into(); },
-                TraitType::None => quote! { self.#field_index = val; },
-            };
+            let param_type: TokenStream2 = generate_param_type(attr_ty, param_type_override);
+            let assignment = generate_assignment_tuple(&field_index, param_type_override);
             quote! {
                 #[inline(always)]
                 #vis fn #set_name(&mut self, val: #param_type) -> &mut Self {
@@ -837,7 +883,7 @@ fn generate_tuple_getter_setter(
             }
             if config.func_type.is_set() {
                 if !config.skip && !has_add_set {
-                    generated.extend(set_quote(vis.clone(), config.trait_type));
+                    generated.extend(set_quote(vis.clone(), config.param_type_override.as_ref()));
                 }
                 has_add_set = true;
             }
@@ -856,7 +902,7 @@ fn generate_tuple_getter_setter(
             generated.extend(get_mut_quote(vis.clone()));
         }
         if !has_add_set {
-            generated.extend(set_quote(vis.clone(), TraitType::None));
+            generated.extend(set_quote(vis.clone(), None));
         }
     }
     generated
@@ -1273,7 +1319,6 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
 ///
 /// - `bool` - True if the field should be skipped, false otherwise.
 fn should_skip_field_for_new(field: &Field) -> bool {
-    // Check if field has #[new(skip)] attribute
     let mut should_skip: bool = false;
     for attr in &field.attrs {
         let config: Config = analyze_attributes(attr.to_token_stream());

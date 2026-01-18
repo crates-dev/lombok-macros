@@ -3,11 +3,11 @@ use crate::*;
 impl Visibility {
     /// Converts the `Visibility` enum variant into a token stream representation.
     ///
-    /// # Parameters
-    /// - `self`: The reference to the `Visibility` instance being converted.
+    /// # Arguments
+    /// - `self` - The reference to the `Visibility` instance being converted.
     ///
     /// # Returns
-    /// - A `TokenStream2` representing the corresponding visibility modifier in Rust syntax.
+    /// - `TokenStream2` - representing the corresponding visibility modifier in Rust syntax.
     pub(crate) fn to_token_stream(&self) -> TokenStream2 {
         match self {
             Visibility::Public => quote! { pub },
@@ -16,33 +16,21 @@ impl Visibility {
             Visibility::Private => quote! {},
         }
     }
-
-    /// Determines if the `Visibility` is public.
-    ///
-    /// # Parameters
-    /// - `self`: The reference to the `Visibility` instance being checked.
-    ///
-    /// # Returns
-    /// - `true` if the visibility is `Public`; otherwise, `false`.
-    #[inline(always)]
-    pub(crate) fn is_public(&self) -> bool {
-        *self == Self::Public
-    }
 }
 
 /// Implementation of Display trait for Visibility enum.
 /// This allows Visibility variants to be formatted as strings using {:?} or {} formatting.
-impl std::fmt::Display for Visibility {
+impl Display for Visibility {
     /// Formats the `Visibility` enum variant into its string representation.
     ///
-    /// # Parameters
-    /// - `self`: The reference to the `Visibility` instance being formatted.
-    /// - `f`: The formatter to write the string representation to.
+    /// # Arguments
+    /// - `self` - The reference to the `Visibility` instance being formatted.
+    /// - `Formatter<'_>` - The formatter to write the string representation to.
     ///
     /// # Returns
-    /// - `Result` indicating success or failure of the formatting operation.
+    /// - `Result` - indicating success or failure of the formatting operation.
     #[inline(always)]
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let s: &str = match self {
             Visibility::Public => "pub",
             Visibility::PublicCrate => "pub(crate)",
@@ -60,11 +48,11 @@ impl std::str::FromStr for Visibility {
 
     /// Parses a string into a `Visibility` enum variant.
     ///
-    /// # Parameters
-    /// - `s`: The string slice to parse into a Visibility variant.
+    /// # Arguments
+    /// - `&str` - The string slice to parse into a Visibility variant.
     ///
     /// # Returns
-    /// - `Result` containing the parsed Visibility variant or an error message.
+    /// - `Result` - containing the parsed Visibility variant or an error message.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "pub" => Ok(Visibility::Public),
