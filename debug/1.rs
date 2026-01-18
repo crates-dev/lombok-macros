@@ -136,6 +136,18 @@ impl User {
     pub fn get_name(&self) -> &String {
         &self.name
     }
+    #[inline(always)]
+    pub fn get__password(&self) -> &String {
+        &self._password
+    }
+    #[inline(always)]
+    pub fn get_email(&self) -> String {
+        self.email.clone().unwrap()
+    }
+    #[inline(always)]
+    pub fn try_get_email(&self) -> &Option<String> {
+        &self.email
+    }
 }
 impl User {
     #[inline(always)]
@@ -473,6 +485,19 @@ impl Product {
     #[inline(always)]
     pub fn set__price(&mut self, val: f64) -> &mut Self {
         self._price = val;
+        self
+    }
+    #[inline(always)]
+    pub fn get__description(&self) -> &String {
+        &self._description
+    }
+    #[inline(always)]
+    pub fn get_mut__description(&mut self) -> &mut String {
+        &mut self._description
+    }
+    #[inline(always)]
+    pub fn set__description(&mut self, val: String) -> &mut Self {
+        self._description = val;
         self
     }
 }
@@ -845,15 +870,28 @@ impl ::core::clone::Clone for EdgeCaseTest {
 struct CopyTest {
     #[get(skip, pub, type(copy))]
     value: i32,
-    #[get(pub(super), type(copy))]
+    #[get(pub(super))]
     flag: bool,
     #[get(private, type(copy))]
     count: u64,
 }
 impl CopyTest {
     #[inline(always)]
-    pub(super) fn get_flag(&self) -> bool {
-        self.flag
+    pub fn get_value(&self) -> &i32 {
+        &self.value
+    }
+    #[inline(always)]
+    pub fn get_mut_value(&mut self) -> &mut i32 {
+        &mut self.value
+    }
+    #[inline(always)]
+    pub fn set_value(&mut self, val: i32) -> &mut Self {
+        self.value = val;
+        self
+    }
+    #[inline(always)]
+    pub(super) fn get_flag(&self) -> &bool {
+        &self.flag
     }
     #[inline(always)]
     pub fn get_mut_flag(&mut self) -> &mut bool {
@@ -941,7 +979,7 @@ impl AllSkipped {
 }
 struct MultiAttributes {
     #[get(pub, type(clone))]
-    #[set(pub, type(Into<Vec<String>>))]
+    #[set(pub(super))]
     complex_field: Vec<String>,
 }
 impl MultiAttributes {
@@ -950,8 +988,8 @@ impl MultiAttributes {
         self.complex_field.clone()
     }
     #[inline(always)]
-    pub fn set_complex_field(&mut self, val: impl Into<Vec<String>>) -> &mut Self {
-        self.complex_field = val.into();
+    pub(super) fn set_complex_field(&mut self, val: Vec<String>) -> &mut Self {
+        self.complex_field = val;
         self
     }
     #[inline(always)]

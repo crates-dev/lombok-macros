@@ -167,7 +167,7 @@ struct EdgeCaseTest {
 struct CopyTest {
     #[get(skip, pub, type(copy))]
     value: i32,
-    #[get(pub(crate), type(copy))]
+    #[get(pub(super), type(copy))]
     flag: bool,
     #[get(private, type(copy))]
     count: u64,
@@ -190,7 +190,7 @@ struct AllSkipped {
 #[derive(Data, Debug, Clone)]
 struct MultiAttributes {
     #[get(pub, type(clone))]
-    #[set(pub, type(Into<Vec<String>>))]
+    #[set(pub(super), type(Into<Vec<String>>))]
     complex_field: Vec<String>,
 }
 
