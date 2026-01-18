@@ -201,6 +201,9 @@ fn main() {
         result_value: Err("error"),
         name: "test".to_string(),
     };
+    let name: &mut String = data.get_mut_name();
+    *name = "mut".to_string();
+    assert_eq!(data.get_name(), "mut");
     let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
     data.set_list(list.clone());
     assert_eq!(*data.get_list(), list);
