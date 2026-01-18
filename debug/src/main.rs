@@ -35,12 +35,12 @@ struct TupleStruct(
 
 #[derive(Data, Debug, Clone)]
 struct TraitTestStruct {
-    #[set(pub, AsRef)]
+    #[set(pub, type(AsRef<str>))]
     name: String,
     #[get(clone)]
     #[set(pub, Into)]
     value: i32,
-    #[set(pub, AsRef)]
+    #[set(pub, type(AsRef<[u8]>))]
     data: Vec<u8>,
     #[set(pub, Into)]
     items: Vec<String>,
