@@ -5,8 +5,9 @@
 /// - `PublicCrate` - The item is visible only within the current crate.
 /// - `PublicSuper` - The item is visible to the parent module and its descendants.
 /// - `Private` - The item is visible only within the current module.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) enum Visibility {
+    #[default]
     Public,
     PublicCrate,
     PublicSuper,

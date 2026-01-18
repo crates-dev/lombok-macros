@@ -16,17 +16,23 @@ pub const NEW: &str = "new";
 /// Constant for the "skip" attribute.
 pub const SKIP: &str = "skip";
 
-/// Constant for public visibility.
-pub const PUBLIC: &str = "pub";
+/// Constant for the "pub" visibility modifier.
+pub const PUB: &str = "pub";
 
 /// Constant for private visibility.
 pub const PRIVATE: &str = "private";
 
-/// Constant for crate-level visibility.
-pub const PUBLIC_CRATE: &str = "crate";
+/// Constant for the "crate" visibility modifier.
+pub const CRATE: &str = "crate";
 
-/// Constant for super-level visibility.
-pub const PUBLIC_SUPER: &str = "super";
+/// Constant for the "pub(crate)" visibility modifier.
+pub const PUB_CRATE: &str = "pub(crate)";
+
+/// Constant for the "super" visibility modifier.
+pub const SUPER: &str = "super";
+
+/// Constant for the "pub(super)" visibility modifier.
+pub const PUB_SUPER: &str = "pub(super)";
 
 /// Constant for return reference type.
 pub const REFERENCE: &str = "reference";

@@ -18,3 +18,14 @@ impl Default for Config {
         }
     }
 }
+
+impl Config {
+    /// Checks if the function should be skipped.
+    ///
+    /// # Returns
+    ///
+    /// - `bool` - True if the function should be skipped, false otherwise.
+    pub(crate) fn need_skip(&self) -> bool {
+        !self.func_type.is_new() && self.skip
+    }
+}

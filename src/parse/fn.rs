@@ -20,15 +20,15 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                     }
                 } else if ident_str == SKIP {
                     config.skip = true;
-                } else if ident_str == PUBLIC {
+                } else if ident_str == PUB {
                     let mut lookahead: Peekable<IntoIter> = tokens_iter.clone();
                     if let Some(TokenTree2::Group(group)) = lookahead.next() {
                         if group.delimiter() == Delimiter::Parenthesis {
                             let group_content = group.stream().to_string();
-                            if group_content == PUBLIC_CRATE {
+                            if group_content == CRATE {
                                 config.visibility = Visibility::PublicCrate;
                                 tokens_iter.next();
-                            } else if group_content == PUBLIC_SUPER {
+                            } else if group_content == SUPER {
                                 config.visibility = Visibility::PublicSuper;
                                 tokens_iter.next();
                             }
@@ -38,12 +38,6 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                     }
                 } else if ident_str == PRIVATE {
                     config.visibility = Visibility::Private;
-                } else if ident_str == PUBLIC_CRATE {
-                    config.visibility = Visibility::PublicCrate;
-                } else if ident_str == PUBLIC_SUPER {
-                    if config.visibility == Visibility::Public {
-                        config.visibility = Visibility::PublicSuper;
-                    }
                 } else if ident_str == CUSTOM_TYPE {
                     if let Some(TokenTree2::Group(group)) = tokens_iter.peek() {
                         if group.delimiter() == Delimiter::Parenthesis {

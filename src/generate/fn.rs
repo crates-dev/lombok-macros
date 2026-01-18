@@ -549,6 +549,9 @@ fn generate_named_getter_setter(
     let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
     for attr in &field.attrs {
         let config: Config = analyze_attributes(attr.to_token_stream());
+        if config.need_skip() {
+            return generated;
+        }
         let name: String = attr_name_ident.to_string();
         config_map.entry(name).or_default().push(config);
     }
@@ -873,6 +876,9 @@ fn generate_tuple_getter_setter(
     let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
     for attr in &field.attrs {
         let config: Config = analyze_attributes(attr.to_token_stream());
+        if config.need_skip() {
+            return generated;
+        }
         let name: String = index.to_string();
         config_map.entry(name).or_default().push(config);
     }
