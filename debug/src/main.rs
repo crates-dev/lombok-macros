@@ -37,7 +37,7 @@ struct TupleStruct(
 struct TraitTestStruct {
     #[set(pub, type(AsRef<str>))]
     name: String,
-    #[get(clone)]
+    #[get(type(clone))]
     #[set(pub, type(Into<i32>))]
     value: i32,
     #[set(pub, type(AsRef<[u8]>))]
@@ -47,7 +47,10 @@ struct TraitTestStruct {
 }
 
 #[derive(Data, Debug, Clone)]
-struct TupleWithResult(#[get(pub)] String, #[get(pub)] Result<i32, &'static str>);
+struct TupleWithResult(
+    #[get(pub, type(clone))] String,
+    #[get(pub)] Result<i32, &'static str>,
+);
 
 #[derive(CustomDebug)]
 enum Response {
@@ -150,11 +153,11 @@ struct LifetimesTest<'a, 'b> {
 struct EdgeCaseTest {
     #[get(pub)]
     empty_string: String,
-    #[get(pub, clone)]
+    #[get(pub, type(clone))]
     empty_vec: Vec<i32>,
-    #[get(pub, clone)]
+    #[get(pub, type(clone))]
     zero_value: i32,
-    #[get(pub, clone)]
+    #[get(pub, type(clone))]
     bool_false: bool,
     #[get(pub)]
     option_none: Option<String>,
@@ -162,11 +165,11 @@ struct EdgeCaseTest {
 
 #[derive(Data, Debug, Clone)]
 struct CopyTest {
-    #[get(pub, copy)]
+    #[get(pub, type(copy))]
     value: i32,
-    #[get(pub, copy)]
+    #[get(pub, type(copy))]
     flag: bool,
-    #[get(pub, copy)]
+    #[get(pub, type(copy))]
     count: u64,
 }
 
@@ -186,7 +189,7 @@ struct AllSkipped {
 
 #[derive(Data, Debug, Clone)]
 struct MultiAttributes {
-    #[get(pub, clone)]
+    #[get(pub, type(clone))]
     #[set(pub, type(Into<Vec<String>>))]
     complex_field: Vec<String>,
 }
@@ -226,8 +229,8 @@ fn main() {
     assert!(*field2);
     tuple_data.set_2(false);
     let mut tuple_result = TupleWithResult("test".to_string(), Err("error"));
-    let try_result: &String = tuple_result.get_0();
-    assert_eq!(*try_result, String::from("test"));
+    let try_result: String = tuple_result.get_0();
+    assert_eq!(try_result, String::from("test"));
     let try_result: &Result<i32, &str> = tuple_result.try_get_1();
     assert_eq!(*try_result, Err("error"));
     tuple_result.1 = Ok(42);
