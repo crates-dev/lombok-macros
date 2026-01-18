@@ -259,61 +259,12 @@ fn generate_return_type(field_type: &Type, return_type: ReturnType) -> TokenStre
             quote! { #field_type }
         }
         ReturnType::Deref => {
-            if is_option_type(field_type) {
-                if let Type::Path(type_path) = field_type {
-                    if let Some(segment) = type_path.path.segments.last() {
-                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
-                                quote! { #ty }
-                            } else {
-                                quote! { #field_type }
-                            }
-                        } else {
-                            quote! { #field_type }
-                        }
-                    } else {
-                        quote! { #field_type }
-                    }
-                } else {
-                    quote! { #field_type }
-                }
-            } else if is_result_type(field_type) {
-                if let Type::Path(type_path) = field_type {
-                    if let Some(segment) = type_path.path.segments.last() {
-                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
-                                quote! { #ty }
-                            } else {
-                                quote! { #field_type }
-                            }
-                        } else {
-                            quote! { #field_type }
-                        }
-                    } else {
-                        quote! { #field_type }
-                    }
-                } else {
-                    quote! { #field_type }
-                }
-            } else if is_box_type(field_type) {
-                if let Type::Path(type_path) = field_type {
-                    if let Some(segment) = type_path.path.segments.last() {
-                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
-                                quote! { #ty }
-                            } else {
-                                quote! { #field_type }
-                            }
-                        } else {
-                            quote! { #field_type }
-                        }
-                    } else {
-                        quote! { #field_type }
-                    }
-                } else {
-                    quote! { #field_type }
-                }
-            } else if is_rc_type(field_type) || is_arc_type(field_type) {
+            if is_option_type(field_type)
+                || is_result_type(field_type)
+                || is_box_type(field_type)
+                || is_rc_type(field_type)
+                || is_arc_type(field_type)
+            {
                 if let Type::Path(type_path) = field_type {
                     if let Some(segment) = type_path.path.segments.last() {
                         if let PathArguments::AngleBracketed(args) = &segment.arguments {
@@ -361,12 +312,185 @@ fn generate_return_type(field_type: &Type, return_type: ReturnType) -> TokenStre
     }
 }
 
-/// Generates getter and setter functions for a given struct field.
+/// Generates a getter function for named struct fields.
 ///
 /// # Arguments
 ///
-/// - `&Field` - The field structure for which to generate getter/setter.
-/// - `Option<usize>` - Optional index for tuple struct fields.
+/// - `bool` - Whether to generate a getter function.
+/// - `TokenStream2` - The visibility of the function.
+/// - `&Ident` - The name of the getter function.
+/// - `&Ident` - The name of the field.
+/// - `&Type` - The type of the field.
+/// - `ReturnType` - The return type of the getter function.
+///
+/// # Returns
+///
+/// - `TokenStream2` - The generated getter function.
+fn build_named_get_quote(
+    need_getter: bool,
+    vis: TokenStream2,
+    get_name: &Ident,
+    attr_name_ident: &Ident,
+    attr_ty: &Type,
+    return_type: ReturnType,
+) -> TokenStream2 {
+    if !need_getter {
+        return quote! {};
+    }
+    let return_ty: TokenStream2 = generate_return_type(attr_ty, return_type);
+    match return_type {
+        ReturnType::Reference => quote! {
+            #[inline(always)]
+            #vis fn #get_name(&self) -> #return_ty {
+                &self.#attr_name_ident
+            }
+        },
+        ReturnType::Clone => quote! {
+            #[inline(always)]
+            #vis fn #get_name(&self) -> #return_ty {
+                self.#attr_name_ident.clone()
+            }
+        },
+        ReturnType::Copy => quote! {
+            #[inline(always)]
+            #vis fn #get_name(&self) -> #return_ty {
+                self.#attr_name_ident
+            }
+        },
+        ReturnType::Deref => {
+            if is_option_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        match &self.#attr_name_ident {
+                            Some(value) => *value,
+                            None => panic!("Attempted to dereference None value for field '{}'", stringify!(#attr_name_ident)),
+                        }
+                    }
+                }
+            } else if is_result_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        match &self.#attr_name_ident {
+                            Ok(value) => (*value).clone(),
+                            Err(err) => panic!("Failed to dereference Result for field '{}': {:?}", stringify!(#attr_name_ident), err),
+                        }
+                    }
+                }
+            } else if is_box_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        *self.#attr_name_ident
+                    }
+                }
+            } else if is_rc_type(attr_ty) || is_arc_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        std::clone::Clone::clone(&*self.#attr_name_ident)
+                    }
+                }
+            } else {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        *self.#attr_name_ident
+                    }
+                }
+            }
+        }
+        ReturnType::Default => {
+            if is_option_type(attr_ty) || is_result_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        self.#attr_name_ident.clone().unwrap()
+                    }
+                }
+            } else {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        &self.#attr_name_ident
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Generates a try getter function for named struct fields.
+///
+/// # Arguments
+///
+/// - `bool` - Whether to generate a try getter function.
+/// - `TokenStream2` - The visibility of the function.
+/// - `&Ident` - The name of the try getter function.
+/// - `&Ident` - The name of the field.
+/// - `&Type` - The type of the field.
+///
+/// # Returns
+///
+/// - `TokenStream2` - The generated try getter function.
+fn build_named_try_get_quote(
+    need_getter: bool,
+    vis: TokenStream2,
+    get_name: &Ident,
+    attr_name_ident: &Ident,
+    attr_ty: &Type,
+) -> TokenStream2 {
+    if need_getter && (is_option_type(attr_ty) || is_result_type(attr_ty)) {
+        let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
+        quote! {
+            #[inline(always)]
+            #vis fn #try_get_name(&self) -> &#attr_ty {
+                &self.#attr_name_ident
+            }
+        }
+    } else {
+        quote! {}
+    }
+}
+
+/// Generates a mutable getter function for named struct fields.
+///
+/// # Arguments
+///
+/// - `bool` - Whether to generate a mutable getter function.
+/// - `TokenStream2` - The visibility of the function.
+/// - `&Ident` - The name of the mutable getter function.
+/// - `&Ident` - The name of the field.
+/// - `&Type` - The type of the field.
+///
+/// # Returns
+///
+/// - `TokenStream2` - The generated mutable getter function.
+fn build_named_get_mut_quote(
+    need_getter_mut: bool,
+    vis: TokenStream2,
+    get_mut_name: &Ident,
+    attr_name_ident: &Ident,
+    attr_ty: &Type,
+) -> TokenStream2 {
+    if need_getter_mut {
+        quote! {
+            #[inline(always)]
+            #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
+                &mut self.#attr_name_ident
+            }
+        }
+    } else {
+        quote! {}
+    }
+}
+
+/// Generates getter and setter functions for named struct fields.
+///
+/// # Arguments
+///
+/// - `&Field` - The field structure to generate for.
 /// - `bool` - Whether to generate a getter function.
 /// - `bool` - Whether to generate a mutable getter function.
 /// - `bool` - Whether to generate a setter function.
@@ -374,17 +498,26 @@ fn generate_return_type(field_type: &Type, return_type: ReturnType) -> TokenStre
 /// # Returns
 ///
 /// - `TokenStream2` - The generated getter and setter functions.
-pub(crate) fn generate_getter_setter(
-    field: &Field,
-    field_index: Option<usize>,
-    need_getter: bool,
-    need_getter_mut: bool,
+fn build_named_set_quote(
     need_setter: bool,
+    vis: TokenStream2,
+    set_name: &Ident,
+    attr_name_ident: &Ident,
+    attr_ty: &Type,
+    param_type_override: Option<&TokenStream2>,
 ) -> TokenStream2 {
-    if let Some(index) = field_index {
-        generate_tuple_getter_setter(field, index, need_getter, need_getter_mut, need_setter)
+    if need_setter {
+        let param_type: TokenStream2 = generate_param_type(attr_ty, param_type_override);
+        let assignment: TokenStream2 = generate_assignment(attr_name_ident, param_type_override);
+        quote! {
+            #[inline(always)]
+            #vis fn #set_name(&mut self, val: #param_type) -> &mut Self {
+                #assignment
+                self
+            }
+        }
     } else {
-        generate_named_getter_setter(field, need_getter, need_getter_mut, need_setter)
+        quote! {}
     }
 }
 
@@ -406,14 +539,9 @@ fn generate_named_getter_setter(
     need_getter_mut: bool,
     need_setter: bool,
 ) -> TokenStream2 {
-    let attr_name: String = field
-        .ident
-        .as_ref()
-        .expect(FIELD_SHOULD_HAVE_A_NAME)
-        .to_string();
-    let attr_name_ident: &Ident = field.ident.as_ref().unwrap();
+    let attr_name_ident: &Ident = field.ident.as_ref().expect(FIELD_SHOULD_HAVE_A_NAME);
     let attr_ty: &Type = &field.ty;
-    let clean_attr_name: String = get_clean_attr_name(&attr_name);
+    let clean_attr_name: String = get_clean_attr_name(&attr_name_ident.to_string());
     let get_name: Ident = format_ident!("{}{}", GET_METHOD_PREFIX, clean_attr_name);
     let get_mut_name: Ident = format_ident!("{}{}", GET_MUT_METHOD_PREFIX, clean_attr_name);
     let set_name: Ident = format_ident!("{}{}", SET_METHOD_PREFIX, clean_attr_name);
@@ -421,202 +549,299 @@ fn generate_named_getter_setter(
     let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
     for attr in &field.attrs {
         let config: Config = analyze_attributes(attr.to_token_stream());
-        let name: String = field.ident.to_token_stream().to_string();
+        let name: String = attr_name_ident.to_string();
         config_map.entry(name).or_default().push(config);
     }
-    let get_quote = |vis: TokenStream2, return_type: ReturnType| {
-        if need_getter {
-            let return_ty: TokenStream2 = generate_return_type(attr_ty, return_type);
-            match return_type {
-                ReturnType::Reference => {
-                    quote! {
-                        #[inline(always)]
-                        #vis fn #get_name(&self) -> #return_ty {
-                            &self.#attr_name_ident
-                        }
-                    }
-                }
-                ReturnType::Clone => {
-                    quote! {
-                        #[inline(always)]
-                        #vis fn #get_name(&self) -> #return_ty {
-                            self.#attr_name_ident.clone()
-                        }
-                    }
-                }
-                ReturnType::Copy => {
-                    quote! {
-                        #[inline(always)]
-                        #vis fn #get_name(&self) -> #return_ty {
-                            self.#attr_name_ident
-                        }
-                    }
-                }
-                ReturnType::Deref => {
-                    if is_option_type(attr_ty) {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                match &self.#attr_name_ident {
-                                    Some(value) => *value,
-                                    None => panic!("Attempted to dereference None value for field '{}'", stringify!(#attr_name_ident)),
-                                }
-                            }
-                        }
-                    } else if is_result_type(attr_ty) {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                match &self.#attr_name_ident {
-                                    Ok(value) => (*value).clone(),
-                                    Err(err) => panic!("Failed to dereference Result for field '{}': {:?}", stringify!(#attr_name_ident), err),
-                                }
-                            }
-                        }
-                    } else if is_box_type(attr_ty) {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                *self.#attr_name_ident
-                            }
-                        }
-                    } else if is_rc_type(attr_ty) || is_arc_type(attr_ty) {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                std::clone::Clone::clone(&*self.#attr_name_ident)
-                            }
-                        }
-                    } else {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                *self.#attr_name_ident
-                            }
-                        }
-                    }
-                }
-                ReturnType::Default => {
-                    if is_option_type(attr_ty) {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                self.#attr_name_ident.clone().unwrap()
-                            }
-                        }
-                    } else if is_result_type(attr_ty) {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                self.#attr_name_ident.clone().unwrap()
-                            }
-                        }
-                    } else {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                &self.#attr_name_ident
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            quote! {}
-        }
-    };
-    let try_get_quote = |vis: TokenStream2| {
-        if need_getter && (is_option_type(attr_ty) || is_result_type(attr_ty)) {
-            let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
-            quote! {
-                #[inline(always)]
-                #vis fn #try_get_name(&self) -> &#attr_ty {
-                    &self.#attr_name_ident
-                }
-            }
-        } else {
-            quote! {}
-        }
-    };
-    let get_mut_quote = |vis: TokenStream2| {
-        if need_getter_mut {
-            quote! {
-                #[inline(always)]
-                #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
-                    &mut self.#attr_name_ident
-                }
-            }
-        } else {
-            quote! {}
-        }
-    };
-    let set_quote = |vis: TokenStream2, param_type_override: Option<&TokenStream2>| {
-        if need_setter {
-            let param_type: TokenStream2 = generate_param_type(attr_ty, param_type_override);
-            let assignment = generate_assignment(&attr_name_ident, param_type_override);
-            quote! {
-                #[inline(always)]
-                #vis fn #set_name(&mut self, val: #param_type) -> &mut Self {
-                    #assignment
-                    self
-                }
-            }
-        } else {
-            quote! {}
-        }
-    };
     let mut has_add_get: bool = false;
     let mut has_add_get_mut: bool = false;
     let mut has_add_set: bool = false;
     for config_list in config_map.values() {
         for config in config_list {
-            if has_add_get && has_add_set && has_add_get_mut {
+            if has_add_get && has_add_get_mut && has_add_set {
                 break;
             }
             if config.skip && config.func_type.is_unknown() {
                 continue;
             }
             let vis: TokenStream2 = config.visibility.to_token_stream();
-            if config.func_type.is_get() {
-                if !config.skip && !has_add_get {
-                    generated.extend(get_quote(vis.clone(), config.return_type));
-                    if is_option_type(attr_ty) || is_result_type(attr_ty) {
-                        generated.extend(try_get_quote(vis.clone()));
-                    }
-                }
+            if config.func_type.is_get() && !config.skip && !has_add_get {
+                generated.extend(build_named_get_quote(
+                    need_getter,
+                    vis.clone(),
+                    &get_name,
+                    attr_name_ident,
+                    attr_ty,
+                    config.return_type,
+                ));
+                generated.extend(build_named_try_get_quote(
+                    need_getter,
+                    vis.clone(),
+                    &get_name,
+                    attr_name_ident,
+                    attr_ty,
+                ));
                 has_add_get = true;
             }
-            if config.func_type.is_get_mut() {
-                if !config.skip && !has_add_get_mut {
-                    generated.extend(get_mut_quote(vis.clone()));
-                }
+            if config.func_type.is_get_mut() && !config.skip && !has_add_get_mut {
+                generated.extend(build_named_get_mut_quote(
+                    need_getter_mut,
+                    vis.clone(),
+                    &get_mut_name,
+                    attr_name_ident,
+                    attr_ty,
+                ));
                 has_add_get_mut = true;
             }
-            if config.func_type.is_set() {
-                if !config.skip && !has_add_set {
-                    generated.extend(set_quote(vis.clone(), config.param_type_override.as_ref()));
-                }
+            if config.func_type.is_set() && !config.skip && !has_add_set {
+                generated.extend(build_named_set_quote(
+                    need_setter,
+                    vis.clone(),
+                    &set_name,
+                    attr_name_ident,
+                    attr_ty,
+                    config.param_type_override.as_ref(),
+                ));
                 has_add_set = true;
             }
         }
     }
-    if !has_add_get || !has_add_set || !has_add_get_mut {
+    if !has_add_get || !has_add_get_mut || !has_add_set {
         let config: Config = Config::default();
         let vis: TokenStream2 = config.visibility.to_token_stream();
         if !has_add_get {
-            generated.extend(get_quote(vis.clone(), config.return_type));
-            if is_option_type(attr_ty) || is_result_type(attr_ty) {
-                generated.extend(try_get_quote(vis.clone()));
-            }
+            generated.extend(build_named_get_quote(
+                need_getter,
+                vis.clone(),
+                &get_name,
+                attr_name_ident,
+                attr_ty,
+                config.return_type,
+            ));
+            generated.extend(build_named_try_get_quote(
+                need_getter,
+                vis.clone(),
+                &get_name,
+                attr_name_ident,
+                attr_ty,
+            ));
         }
         if !has_add_get_mut {
-            generated.extend(get_mut_quote(vis.clone()));
+            generated.extend(build_named_get_mut_quote(
+                need_getter_mut,
+                vis.clone(),
+                &get_mut_name,
+                attr_name_ident,
+                attr_ty,
+            ));
         }
         if !has_add_set {
-            generated.extend(set_quote(vis.clone(), None));
+            generated.extend(build_named_set_quote(
+                need_setter,
+                vis.clone(),
+                &set_name,
+                attr_name_ident,
+                attr_ty,
+                None,
+            ));
         }
     }
     generated
+}
+
+/// Generates a getter function for tuple struct fields.
+///
+/// # Arguments
+///
+/// - `bool` - Whether to generate a getter function.
+/// - `TokenStream2` - The visibility of the function.
+/// - `&Ident,` - The name of the getter function.
+/// - `&Index,` - The index of the field in the tuple struct.
+/// - `&Type` - The type of the field.
+/// - `ReturnType` - The return type of the getter function.
+///
+/// # Returns
+///
+/// - `TokenStream2` - The generated getter function.
+fn build_tuple_get_quote(
+    need_getter: bool,
+    vis: TokenStream2,
+    get_name: &Ident,
+    field_index: &Index,
+    attr_ty: &Type,
+    return_type: ReturnType,
+) -> TokenStream2 {
+    if !need_getter {
+        return quote! {};
+    }
+    let return_ty: TokenStream2 = generate_return_type(attr_ty, return_type);
+    match return_type {
+        ReturnType::Reference => quote! {
+            #[inline(always)]
+            #vis fn #get_name(&self) -> #return_ty {
+                &self.#field_index
+            }
+        },
+        ReturnType::Clone => quote! {
+            #[inline(always)]
+            #vis fn #get_name(&self) -> #return_ty {
+                self.#field_index.clone()
+            }
+        },
+        ReturnType::Copy => quote! {
+            #[inline(always)]
+            #vis fn #get_name(&self) -> #return_ty {
+                self.#field_index
+            }
+        },
+        ReturnType::Deref => {
+            if is_option_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        match &self.#field_index {
+                            Some(value) => *value,
+                            None => panic!("Cannot dereference None value"),
+                        }
+                    }
+                }
+            } else if is_result_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        match &self.#field_index {
+                            Ok(value) => (*value).clone(),
+                            Err(e) => panic!("Cannot dereference Err value: {:?}", e),
+                        }
+                    }
+                }
+            } else {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        self.#field_index
+                    }
+                }
+            }
+        }
+        ReturnType::Default => {
+            if is_option_type(attr_ty) || is_result_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        self.#field_index.clone().unwrap()
+                    }
+                }
+            } else {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        &self.#field_index
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Generates a try getter function for tuple struct fields.
+///
+/// # Arguments
+///
+/// - `bool` - Whether to generate a try getter function.
+/// - `TokenStream2` - The visibility of the function.
+/// - `&Ident` - The name of the try getter function.
+/// - `&Index` - The index of the field in the tuple struct.
+/// - `&Type` - The type of the field.
+///
+/// # Returns
+///
+/// - `TokenStream2` - The generated try getter function.
+fn build_tuple_try_get_quote(
+    need_getter: bool,
+    vis: TokenStream2,
+    get_name: &Ident,
+    field_index: &Index,
+    attr_ty: &Type,
+) -> TokenStream2 {
+    if need_getter && (is_option_type(attr_ty) || is_result_type(attr_ty)) {
+        let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
+        quote! {
+            #[inline(always)]
+            #vis fn #try_get_name(&self) -> &#attr_ty {
+                &self.#field_index
+            }
+        }
+    } else {
+        quote! {}
+    }
+}
+
+/// Generates a mutable getter function for tuple struct fields.
+///
+/// # Arguments
+///
+/// - `bool` - Whether to generate a mutable getter function.
+/// - `TokenStream2` - The visibility of the function.
+/// - `&Ident` - The name of the mutable getter function.
+/// - `&Index` - The index of the field in the tuple struct.
+/// - `&Type` - The type of the field.
+///
+/// # Returns
+///
+/// - `TokenStream2` - The generated mutable getter function.
+fn build_tuple_get_mut_quote(
+    need_getter_mut: bool,
+    vis: TokenStream2,
+    get_mut_name: &Ident,
+    field_index: &Index,
+    attr_ty: &Type,
+) -> TokenStream2 {
+    if need_getter_mut {
+        quote! {
+            #[inline(always)]
+            #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
+                &mut self.#field_index
+            }
+        }
+    } else {
+        quote! {}
+    }
+}
+
+/// Generates getter and setter functions for tuple struct fields.
+///
+/// # Arguments
+///
+/// - `&Field` - The field structure to generate for.
+/// - `usize` - The index of the field in the tuple struct.
+/// - `bool` - Whether to generate a getter function.
+/// - `bool` - Whether to generate a mutable getter function.
+/// - `bool` - Whether to generate a setter function.
+///
+/// # Returns
+///
+/// - `TokenStream2` - The generated getter and setter functions.
+fn build_tuple_set_quote(
+    need_setter: bool,
+    vis: TokenStream2,
+    set_name: &Ident,
+    field_index: &Index,
+    attr_ty: &Type,
+    param_type_override: Option<&TokenStream2>,
+) -> TokenStream2 {
+    if need_setter {
+        let param_type: TokenStream2 = generate_param_type(attr_ty, param_type_override);
+        let assignment: TokenStream2 = generate_assignment_tuple(field_index, param_type_override);
+        quote! {
+            #[inline(always)]
+            #vis fn #set_name(&mut self, val: #param_type) -> &mut Self {
+                #assignment
+                self
+            }
+        }
+    } else {
+        quote! {}
+    }
 }
 
 /// Generates getter and setter functions for tuple struct fields.
@@ -651,185 +876,127 @@ fn generate_tuple_getter_setter(
         let name: String = index.to_string();
         config_map.entry(name).or_default().push(config);
     }
-    let get_quote = |vis: TokenStream2, return_type: ReturnType| {
-        if need_getter {
-            let return_ty: TokenStream2 = generate_return_type(attr_ty, return_type);
-            match return_type {
-                ReturnType::Reference => {
-                    quote! {
-                        #[inline(always)]
-                        #vis fn #get_name(&self) -> &#attr_ty {
-                            &self.#field_index
-                        }
-                    }
-                }
-                ReturnType::Clone => {
-                    quote! {
-                        #[inline(always)]
-                        #vis fn #get_name(&self) -> #attr_ty {
-                            self.#field_index.clone()
-                        }
-                    }
-                }
-                ReturnType::Copy => {
-                    quote! {
-                        #[inline(always)]
-                        #vis fn #get_name(&self) -> #attr_ty {
-                            self.#field_index
-                        }
-                    }
-                }
-                ReturnType::Deref => {
-                    if is_option_type(attr_ty) {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                match &self.#field_index {
-                                    Some(value) => *value,
-                                    None => panic!("Cannot dereference None value"),
-                                }
-                            }
-                        }
-                    } else if is_result_type(attr_ty) {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                match &self.#field_index {
-                                    Ok(value) => (*value).clone(),
-                                    Err(e) => panic!("Cannot dereference Err value: {:?}", e),
-                                }
-                            }
-                        }
-                    } else {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                self.#field_index
-                            }
-                        }
-                    }
-                }
-                ReturnType::Default => {
-                    if is_option_type(attr_ty) {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                self.#field_index.clone().unwrap()
-                            }
-                        }
-                    } else if is_result_type(attr_ty) {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                self.#field_index.clone().unwrap()
-                            }
-                        }
-                    } else {
-                        quote! {
-                            #[inline(always)]
-                            #vis fn #get_name(&self) -> #return_ty {
-                                &self.#field_index
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            quote! {}
-        }
-    };
-    let try_get_quote = |vis: TokenStream2| {
-        if need_getter && (is_option_type(attr_ty) || is_result_type(attr_ty)) {
-            let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
-            quote! {
-                #[inline(always)]
-                #vis fn #try_get_name(&self) -> &#attr_ty {
-                    &self.#field_index
-                }
-            }
-        } else {
-            quote! {}
-        }
-    };
-    let get_mut_quote = |vis: TokenStream2| {
-        if need_getter_mut {
-            quote! {
-                #[inline(always)]
-                #vis fn #get_mut_name(&mut self) -> &mut #attr_ty {
-                    &mut self.#field_index
-                }
-            }
-        } else {
-            quote! {}
-        }
-    };
-    let set_quote = |vis: TokenStream2, param_type_override: Option<&TokenStream2>| {
-        if need_setter {
-            let param_type: TokenStream2 = generate_param_type(attr_ty, param_type_override);
-            let assignment = generate_assignment_tuple(&field_index, param_type_override);
-            quote! {
-                #[inline(always)]
-                #vis fn #set_name(&mut self, val: #param_type) -> &mut Self {
-                    #assignment
-                    self
-                }
-            }
-        } else {
-            quote! {}
-        }
-    };
     let mut has_add_get: bool = false;
     let mut has_add_get_mut: bool = false;
     let mut has_add_set: bool = false;
     for config_list in config_map.values() {
         for config in config_list {
-            if has_add_get && has_add_set && has_add_get_mut {
+            if has_add_get && has_add_get_mut && has_add_set {
                 break;
             }
             if config.skip && config.func_type.is_unknown() {
                 continue;
             }
             let vis: TokenStream2 = config.visibility.to_token_stream();
-            if config.func_type.is_get() {
-                if !config.skip && !has_add_get {
-                    generated.extend(get_quote(vis.clone(), config.return_type));
-                    if is_option_type(attr_ty) || is_result_type(attr_ty) {
-                        generated.extend(try_get_quote(vis.clone()));
-                    }
-                }
+            if config.func_type.is_get() && !config.skip && !has_add_get {
+                generated.extend(build_tuple_get_quote(
+                    need_getter,
+                    vis.clone(),
+                    &get_name,
+                    &field_index,
+                    attr_ty,
+                    config.return_type,
+                ));
+                generated.extend(build_tuple_try_get_quote(
+                    need_getter,
+                    vis.clone(),
+                    &get_name,
+                    &field_index,
+                    attr_ty,
+                ));
                 has_add_get = true;
             }
-            if config.func_type.is_get_mut() {
-                if !config.skip && !has_add_get_mut {
-                    generated.extend(get_mut_quote(vis.clone()));
-                }
+            if config.func_type.is_get_mut() && !config.skip && !has_add_get_mut {
+                generated.extend(build_tuple_get_mut_quote(
+                    need_getter_mut,
+                    vis.clone(),
+                    &get_mut_name,
+                    &field_index,
+                    attr_ty,
+                ));
                 has_add_get_mut = true;
             }
-            if config.func_type.is_set() {
-                if !config.skip && !has_add_set {
-                    generated.extend(set_quote(vis.clone(), config.param_type_override.as_ref()));
-                }
+            if config.func_type.is_set() && !config.skip && !has_add_set {
+                generated.extend(build_tuple_set_quote(
+                    need_setter,
+                    vis.clone(),
+                    &set_name,
+                    &field_index,
+                    attr_ty,
+                    config.param_type_override.as_ref(),
+                ));
                 has_add_set = true;
             }
         }
     }
-    if !has_add_get || !has_add_set || !has_add_get_mut {
+    if !has_add_get || !has_add_get_mut || !has_add_set {
         let config: Config = Config::default();
         let vis: TokenStream2 = config.visibility.to_token_stream();
         if !has_add_get {
-            generated.extend(get_quote(vis.clone(), config.return_type));
-            if is_option_type(attr_ty) || is_result_type(attr_ty) {
-                generated.extend(try_get_quote(vis.clone()));
-            }
+            generated.extend(build_tuple_get_quote(
+                need_getter,
+                vis.clone(),
+                &get_name,
+                &field_index,
+                attr_ty,
+                config.return_type,
+            ));
+            generated.extend(build_tuple_try_get_quote(
+                need_getter,
+                vis.clone(),
+                &get_name,
+                &field_index,
+                attr_ty,
+            ));
         }
         if !has_add_get_mut {
-            generated.extend(get_mut_quote(vis.clone()));
+            generated.extend(build_tuple_get_mut_quote(
+                need_getter_mut,
+                vis.clone(),
+                &get_mut_name,
+                &field_index,
+                attr_ty,
+            ));
         }
         if !has_add_set {
-            generated.extend(set_quote(vis.clone(), None));
+            generated.extend(build_tuple_set_quote(
+                need_setter,
+                vis.clone(),
+                &set_name,
+                &field_index,
+                attr_ty,
+                None,
+            ));
         }
     }
     generated
+}
+
+/// Generates getter and setter functions for a given struct field.
+///
+/// # Arguments
+///
+/// - `&Field` - The field structure for which to generate getter/setter.
+/// - `Option<usize>` - Optional index for tuple struct fields.
+/// - `bool` - Whether to generate a getter function.
+/// - `bool` - Whether to generate a mutable getter function.
+/// - `bool` - Whether to generate a setter function.
+///
+/// # Returns
+///
+/// - `TokenStream2` - The generated getter and setter functions.
+pub(crate) fn generate_getter_setter(
+    field: &Field,
+    field_index: Option<usize>,
+    need_getter: bool,
+    need_getter_mut: bool,
+    need_setter: bool,
+) -> TokenStream2 {
+    if let Some(index) = field_index {
+        generate_tuple_getter_setter(field, index, need_getter, need_getter_mut, need_setter)
+    } else {
+        generate_named_getter_setter(field, need_getter, need_getter_mut, need_setter)
+    }
 }
 
 /// Processes the input token stream to generate `Lombok`-style boilerplate code.
