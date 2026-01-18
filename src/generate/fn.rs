@@ -261,9 +261,9 @@ fn generate_return_type(field_type: &Type, return_type: ReturnType) -> TokenStre
         ReturnType::Deref => {
             if is_option_type(field_type)
                 || is_result_type(field_type)
-                || is_box_type(field_type)
-                || is_rc_type(field_type)
                 || is_arc_type(field_type)
+                || is_rc_type(field_type)
+                || is_box_type(field_type)
             {
                 if let Type::Path(type_path) = field_type {
                     if let Some(segment) = type_path.path.segments.last() {
