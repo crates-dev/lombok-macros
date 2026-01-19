@@ -87,6 +87,7 @@ pub(crate) use syn::{
 ///     #[get(pub, type(copy))]
 ///     count: i32,
 /// }
+///
 /// let basic = BasicStruct {
 ///     name: "test".to_string(),
 ///     description: "description".to_string(),
@@ -117,6 +118,7 @@ pub(crate) use syn::{
 ///     #[get(pub)]
 ///     result: Result<String, String>,
 /// }
+///
 /// let opt_struct = OptionalStruct {
 ///     optional: Some("value".to_string()),
 ///     optional_ref: Some("ref_value".to_string()),
@@ -140,6 +142,7 @@ pub(crate) use syn::{
 ///     #[get(pub)] String,
 ///     #[get(pub, type(clone))] Vec<i32>,
 /// );
+///
 /// let tuple = TupleStruct("hello".to_string(), vec![1, 2, 3]);
 /// let field0: &String = tuple.get_0();
 /// let field1: Vec<i32> = tuple.get_1();
@@ -161,6 +164,7 @@ pub(crate) use syn::{
 ///     #[get(pub, type(copy))]
 ///     count: u64,
 /// }
+///
 /// let copy_struct = CopyStruct {
 ///     value: 42,
 ///     flag: true,
@@ -192,6 +196,7 @@ pub(crate) use syn::{
 ///     #[get(pub, type(deref))]
 ///     arc_value: std::sync::Arc<Vec<u8>>,
 /// }
+///
 /// let deref_struct = DerefStruct {
 ///     optional: Some(true),
 ///     result: Ok("success".to_string()),
@@ -223,6 +228,7 @@ pub(crate) use syn::{
 ///     #[get(pub, type(clone))]
 ///     owned: T,
 /// }
+///
 /// let data = 42;
 /// let generic = GenericStruct {
 ///     value: &data,
@@ -262,6 +268,7 @@ pub fn getter(input: TokenStream) -> TokenStream {
 ///     optional_lifetime_a: Option<&'a T>,
 ///     optional_lifetime_b: Option<&'b str>,
 /// }
+///
 /// let list: Vec<String> = vec!["hello".to_string(), "world".to_string()];
 /// let mut struct_with_lifetimes: StructWithLifetimes<usize> = StructWithLifetimes {
 ///     list: list.clone(),
@@ -313,6 +320,7 @@ pub fn getter_mut(input: TokenStream) -> TokenStream {
 ///     #[set(private)]
 ///     secret: String,
 /// }
+///
 /// let mut basic = BasicStruct {
 ///     name: "initial".to_string(),
 ///     value: 0,
@@ -365,6 +373,7 @@ pub fn getter_mut(input: TokenStream) -> TokenStream {
 ///     #[set(pub)] String,
 ///     #[set(pub)] i32,
 /// );
+///
 /// let mut tuple = TupleStruct("hello".to_string(), 1);
 /// tuple.set_0("world".to_string());
 /// tuple.set_1(100);
@@ -421,7 +430,6 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///     age: 30,
 ///     mutable_age: 25,
 /// };
-///
 /// let name_reference: &String = user.get_name();
 /// let email_clone: String = user.get_email();
 /// let age_copy: u32 = user.get_age();
@@ -431,14 +439,12 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///
 /// user.set_name("Bob".to_string());
 /// user.set_email("bob@ltpp.vip".to_string());
-///
 /// let updated_email: String = user.get_email();
 /// assert_eq!(updated_email, "bob@ltpp.vip");
 ///
-/// let age_mutable_reference: &mut u32 = user.get_mut_mutable_age();
-/// *age_mutable_reference = 31;
+/// (*user.get_mut_mutable_age() = 31);
 ///
-/// assert_eq!(*age_mutable_reference, 31);
+/// assert_eq!(*user.get_mutable_age(), 31);
 /// ```
 ///
 /// ## Multiple Field Types
@@ -470,7 +476,6 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// let id_reference: &i32 = complex.get_id();
 /// let optional_clone: String = complex.get_optional();
 /// let result_reference: &Result<i32, String> = complex.get_result();
-///
 /// assert_eq!(*id_reference, 1);
 /// assert_eq!(optional_clone, "value");
 /// assert_eq!(*result_reference, Ok(42));
@@ -491,7 +496,6 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// let mut point = Point(1.0, 2.0);
 /// let x_coordinate: &f64 = point.get_0();
 /// let y_coordinate: f64 = point.get_1();
-///
 /// assert_eq!(*x_coordinate, 1.0);
 /// assert_eq!(y_coordinate, 2.0);
 ///
