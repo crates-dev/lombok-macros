@@ -23,7 +23,7 @@ pub(crate) use proc_macro2::{
 };
 pub(crate) use quote::{ToTokens, format_ident, quote};
 pub(crate) use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fmt::{Display, Formatter},
     iter::Peekable,
     str::FromStr,
@@ -125,10 +125,10 @@ pub(crate) use syn::{
 ///     result: Ok("success".to_string()),
 /// };
 /// let optional_value: String = opt_struct.get_optional();
-/// let optional_reference: &Option<String> = opt_struct.get_optional_ref();
+/// let optional_reference: String = opt_struct.get_optional_ref();
 /// let result_value: String = opt_struct.get_result();
 /// assert_eq!(optional_value, "value");
-/// assert_eq!(*optional_reference, Some("ref_value".to_string()));
+/// assert_eq!(optional_reference, "ref_value");
 /// assert_eq!(result_value, "success");
 /// ```
 ///
@@ -475,10 +475,10 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///
 /// let id_reference: &i32 = complex.get_id();
 /// let optional_clone: String = complex.get_optional();
-/// let result_reference: &Result<i32, String> = complex.get_result();
+/// let result_reference: i32 = complex.get_result();
 /// assert_eq!(*id_reference, 1);
 /// assert_eq!(optional_clone, "value");
-/// assert_eq!(*result_reference, Ok(42));
+/// assert_eq!(result_reference, 42);
 /// ```
 ///
 /// ## Tuple Struct with Combined Accessors

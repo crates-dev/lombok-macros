@@ -14,7 +14,7 @@ use std::collections::HashSet;
 /// - `param_type_override` - Optional custom parameter type to use instead of deriving from field type.
 /// - `skip_flags` - A set of `SkipFlag` indicating which function types should be skipped.
 /// - `added_flags` - A set of `AddedFlag` indicating which function types have been added.
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct Config {
     /// A `FuncType` that specifies the function type.
     pub(crate) func_type: FuncType,

@@ -55,17 +55,17 @@ pub(crate) enum ParameterType {
 /// Represents the return type behavior for getter methods.
 ///
 /// This enum defines how getter methods should return values,
-/// controlling whether they return references, cloned values, or use default behavior.
+/// controlling whether they return references, cloned values.
 ///
 /// # Variants
 /// - `Reference` - Returns a reference to the field value (`&T`).
 /// - `Clone` - Returns a cloned copy of the field value (`T`).
 /// - `Copy` - Returns a copy of the field value for types implementing Copy trait (`self.field`).
 /// - `Deref` - Returns a dereferenced value of the field (`*field`), with match control for Option/Result.
-/// - `Default` - Uses default behavior (reference for non-Option/Result, cloned for Option/Result).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) enum ReturnType {
     /// Returns a reference to the field value (`&T`).
+    #[default]
     Reference,
     /// Returns a cloned copy of the field value (`T`).
     Clone,
@@ -73,6 +73,4 @@ pub(crate) enum ReturnType {
     Copy,
     /// Returns a dereferenced value of the field (`*field`), with match control for Option/Result.
     Deref,
-    /// Uses default behavior (reference for non-Option/Result, cloned for Option/Result).
-    Default,
 }

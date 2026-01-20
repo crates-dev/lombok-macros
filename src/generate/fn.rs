@@ -314,7 +314,27 @@ fn generate_assignment_tuple(
 fn generate_return_type(field_type: &Type, return_type: ReturnType) -> TokenStream2 {
     match return_type {
         ReturnType::Reference => {
-            quote! { &#field_type }
+            if is_option_type(field_type) || is_result_type(field_type) {
+                if let Type::Path(type_path) = field_type {
+                    if let Some(segment) = type_path.path.segments.last() {
+                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
+                                quote! { #ty }
+                            } else {
+                                quote! { #field_type }
+                            }
+                        } else {
+                            quote! { #field_type }
+                        }
+                    } else {
+                        quote! { #field_type }
+                    }
+                } else {
+                    quote! { #field_type }
+                }
+            } else {
+                quote! { &#field_type }
+            }
         }
         ReturnType::Clone | ReturnType::Copy => {
             quote! { #field_type }
@@ -347,29 +367,6 @@ fn generate_return_type(field_type: &Type, return_type: ReturnType) -> TokenStre
                 quote! { #field_type }
             }
         }
-        ReturnType::Default => {
-            if is_option_type(field_type) || is_result_type(field_type) {
-                if let Type::Path(type_path) = field_type {
-                    if let Some(segment) = type_path.path.segments.last() {
-                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                            if let Some(GenericArgument::Type(ty)) = args.args.first() {
-                                quote! { #ty }
-                            } else {
-                                quote! { #field_type }
-                            }
-                        } else {
-                            quote! { #field_type }
-                        }
-                    } else {
-                        quote! { #field_type }
-                    }
-                } else {
-                    quote! { #field_type }
-                }
-            } else {
-                quote! { &#field_type }
-            }
-        }
     }
 }
 
@@ -400,12 +397,23 @@ fn build_named_get_quote(
     }
     let return_ty: TokenStream2 = generate_return_type(attr_ty, return_type);
     match return_type {
-        ReturnType::Reference => quote! {
-            #[inline(always)]
-            #vis fn #get_name(&self) -> #return_ty {
-                &self.#attr_name_ident
+        ReturnType::Reference => {
+            if is_option_type(attr_ty) || is_result_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        self.#attr_name_ident.clone().unwrap()
+                    }
+                }
+            } else {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        &self.#attr_name_ident
+                    }
+                }
             }
-        },
+        }
         ReturnType::Clone => quote! {
             #[inline(always)]
             #vis fn #get_name(&self) -> #return_ty {
@@ -458,23 +466,6 @@ fn build_named_get_quote(
                     #[inline(always)]
                     #vis fn #get_name(&self) -> #return_ty {
                         *self.#attr_name_ident
-                    }
-                }
-            }
-        }
-        ReturnType::Default => {
-            if is_option_type(attr_ty) || is_result_type(attr_ty) {
-                quote! {
-                    #[inline(always)]
-                    #vis fn #get_name(&self) -> #return_ty {
-                        self.#attr_name_ident.clone().unwrap()
-                    }
-                }
-            } else {
-                quote! {
-                    #[inline(always)]
-                    #vis fn #get_name(&self) -> #return_ty {
-                        &self.#attr_name_ident
                     }
                 }
             }
@@ -552,12 +543,6 @@ fn build_named_try_get_quote(
                 quote! {}
             }
         }
-        ReturnType::Default => quote! {
-            #[inline(always)]
-            #vis fn #try_get_name(&self) -> &#attr_ty {
-                &self.#attr_name_ident
-            }
-        },
     }
 }
 
@@ -804,12 +789,23 @@ fn build_tuple_get_quote(
     }
     let return_ty: TokenStream2 = generate_return_type(attr_ty, return_type);
     match return_type {
-        ReturnType::Reference => quote! {
-            #[inline(always)]
-            #vis fn #get_name(&self) -> #return_ty {
-                &self.#field_index
+        ReturnType::Reference => {
+            if is_option_type(attr_ty) || is_result_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        self.#field_index.clone().unwrap()
+                    }
+                }
+            } else {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #get_name(&self) -> #return_ty {
+                        &self.#field_index
+                    }
+                }
             }
-        },
+        }
         ReturnType::Clone => quote! {
             #[inline(always)]
             #vis fn #get_name(&self) -> #return_ty {
@@ -848,23 +844,6 @@ fn build_tuple_get_quote(
                     #[inline(always)]
                     #vis fn #get_name(&self) -> #return_ty {
                         self.#field_index
-                    }
-                }
-            }
-        }
-        ReturnType::Default => {
-            if is_option_type(attr_ty) || is_result_type(attr_ty) {
-                quote! {
-                    #[inline(always)]
-                    #vis fn #get_name(&self) -> #return_ty {
-                        self.#field_index.clone().unwrap()
-                    }
-                }
-            } else {
-                quote! {
-                    #[inline(always)]
-                    #vis fn #get_name(&self) -> #return_ty {
-                        &self.#field_index
                     }
                 }
             }
@@ -942,12 +921,6 @@ fn build_tuple_try_get_quote(
                 quote! {}
             }
         }
-        ReturnType::Default => quote! {
-            #[inline(always)]
-            #vis fn #try_get_name(&self) -> &#attr_ty {
-                &self.#field_index
-            }
-        },
     }
 }
 

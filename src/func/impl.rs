@@ -116,18 +116,6 @@ impl FuncType {
     }
 }
 
-impl Default for ReturnType {
-    /// Returns the default return type (`Default`).
-    ///
-    /// # Returns
-    ///
-    /// - `ReturnType` - The default return type.
-    #[inline(always)]
-    fn default() -> Self {
-        ReturnType::Default
-    }
-}
-
 impl FromStr for ReturnType {
     type Err = String;
 
@@ -148,7 +136,7 @@ impl FromStr for ReturnType {
             CLONE => Ok(ReturnType::Clone),
             COPY => Ok(ReturnType::Copy),
             DEREF => Ok(ReturnType::Deref),
-            _ => Ok(ReturnType::Default),
+            _ => Ok(ReturnType::Reference),
         }
     }
 }
