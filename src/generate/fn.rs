@@ -62,6 +62,67 @@ fn is_result_type(ty: &Type) -> bool {
     }
 }
 
+/// Extracts the inner type from an Option<T> type.
+///
+/// # Arguments
+///
+/// - `&Type` - The Option type.
+///
+/// # Returns
+///
+/// - `Option<Type>` - Some containing the inner type T, or None if extraction fails.
+fn extract_option_inner_type(ty: &Type) -> Option<Type> {
+    match ty {
+        Type::Path(type_path) => {
+            if let Some(segment) = type_path.path.segments.last() {
+                if segment.ident == OPTION_TYPE {
+                    if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                        if let Some(GenericArgument::Type(inner_ty)) = args.args.first() {
+                            return Some(inner_ty.clone());
+                        }
+                    }
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
+/// Extracts the success and error types from a Result<T, E> type.
+///
+/// # Arguments
+///
+/// - `&Type` - The Result type.
+///
+/// # Returns
+///
+/// - `Option<(Type, Type)>` - Some containing (T, E), or None if extraction fails.
+fn extract_result_types(ty: &Type) -> Option<(Type, Type)> {
+    match ty {
+        Type::Path(type_path) => {
+            if let Some(segment) = type_path.path.segments.last() {
+                if segment.ident == RESULT_TYPE {
+                    if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                        let mut types = args.args.iter().filter_map(|arg| {
+                            if let GenericArgument::Type(inner_ty) = arg {
+                                Some(inner_ty.clone())
+                            } else {
+                                None
+                            }
+                        });
+                        if let (Some(ok_ty), Some(err_ty)) = (types.next(), types.next()) {
+                            return Some((ok_ty, err_ty));
+                        }
+                    }
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
 /// Checks if a type is a Box<T> type.
 ///
 /// # Arguments
@@ -430,6 +491,7 @@ fn build_named_get_quote(
 /// - `&Ident` - The name of the try getter function.
 /// - `&Ident` - The name of the field.
 /// - `&Type` - The type of the field.
+/// - `ReturnType` - The return type strategy to apply.
 ///
 /// # Returns
 ///
@@ -440,17 +502,62 @@ fn build_named_try_get_quote(
     get_name: &Ident,
     attr_name_ident: &Ident,
     attr_ty: &Type,
+    return_type: ReturnType,
 ) -> TokenStream2 {
-    if need_getter && (is_option_type(attr_ty) || is_result_type(attr_ty)) {
-        let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
-        quote! {
+    if !need_getter || !is_option_type(attr_ty) && !is_result_type(attr_ty) {
+        return quote! {};
+    }
+    let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
+    match return_type {
+        ReturnType::Reference => quote! {
             #[inline(always)]
             #vis fn #try_get_name(&self) -> &#attr_ty {
                 &self.#attr_name_ident
             }
+        },
+        ReturnType::Clone => quote! {
+            #[inline(always)]
+            #vis fn #try_get_name(&self) -> #attr_ty {
+                self.#attr_name_ident.clone()
+            }
+        },
+        ReturnType::Copy => quote! {
+            #[inline(always)]
+            #vis fn #try_get_name(&self) -> #attr_ty {
+                self.#attr_name_ident
+            }
+        },
+        ReturnType::Deref => {
+            if let Some(inner_ty) = extract_option_inner_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #try_get_name(&self) -> Option<&(#inner_ty)> {
+                        match &self.#attr_name_ident {
+                            Some(value) => Some(value),
+                            None => None,
+                        }
+                    }
+                }
+            } else if let Some((ok_ty, err_ty)) = extract_result_types(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #try_get_name(&self) -> Result<&(#ok_ty), &#err_ty> {
+                        match &self.#attr_name_ident {
+                            Ok(value) => Ok(value),
+                            Err(err) => Err(err),
+                        }
+                    }
+                }
+            } else {
+                quote! {}
+            }
         }
-    } else {
-        quote! {}
+        ReturnType::Default => quote! {
+            #[inline(always)]
+            #vis fn #try_get_name(&self) -> &#attr_ty {
+                &self.#attr_name_ident
+            }
+        },
     }
 }
 
@@ -591,6 +698,7 @@ fn generate_named_getter_setter(
                     &get_name,
                     attr_name_ident,
                     attr_ty,
+                    config.return_type,
                 ));
                 shared_config.added_flags.insert(FuncType::Get);
             }
@@ -643,6 +751,7 @@ fn generate_named_getter_setter(
                 &get_name,
                 attr_name_ident,
                 attr_ty,
+                shared_config.return_type,
             ));
         }
         if !shared_config.added_flags.contains(&FuncType::GetMut) {
@@ -772,6 +881,7 @@ fn build_tuple_get_quote(
 /// - `&Ident` - The name of the try getter function.
 /// - `&Index` - The index of the field in the tuple struct.
 /// - `&Type` - The type of the field.
+/// - `ReturnType` - The return type strategy to apply.
 ///
 /// # Returns
 ///
@@ -782,17 +892,62 @@ fn build_tuple_try_get_quote(
     get_name: &Ident,
     field_index: &Index,
     attr_ty: &Type,
+    return_type: ReturnType,
 ) -> TokenStream2 {
-    if need_getter && (is_option_type(attr_ty) || is_result_type(attr_ty)) {
-        let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
-        quote! {
+    if !need_getter || !is_option_type(attr_ty) && !is_result_type(attr_ty) {
+        return quote! {};
+    }
+    let try_get_name: Ident = format_ident!("{}{}", TRY_GET_METHOD_PREFIX, get_name);
+    match return_type {
+        ReturnType::Reference => quote! {
             #[inline(always)]
             #vis fn #try_get_name(&self) -> &#attr_ty {
                 &self.#field_index
             }
+        },
+        ReturnType::Clone => quote! {
+            #[inline(always)]
+            #vis fn #try_get_name(&self) -> #attr_ty {
+                self.#field_index.clone()
+            }
+        },
+        ReturnType::Copy => quote! {
+            #[inline(always)]
+            #vis fn #try_get_name(&self) -> #attr_ty {
+                self.#field_index
+            }
+        },
+        ReturnType::Deref => {
+            if let Some(inner_ty) = extract_option_inner_type(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #try_get_name(&self) -> Option<&(#inner_ty)> {
+                        match &self.#field_index {
+                            Some(value) => Some(value),
+                            None => None,
+                        }
+                    }
+                }
+            } else if let Some((ok_ty, err_ty)) = extract_result_types(attr_ty) {
+                quote! {
+                    #[inline(always)]
+                    #vis fn #try_get_name(&self) -> Result<&(#ok_ty), &#err_ty> {
+                        match &self.#field_index {
+                            Ok(value) => Ok(value),
+                            Err(err) => Err(err),
+                        }
+                    }
+                }
+            } else {
+                quote! {}
+            }
         }
-    } else {
-        quote! {}
+        ReturnType::Default => quote! {
+            #[inline(always)]
+            #vis fn #try_get_name(&self) -> &#attr_ty {
+                &self.#field_index
+            }
+        },
     }
 }
 
@@ -935,6 +1090,7 @@ fn generate_tuple_getter_setter(
                     &get_name,
                     &field_index,
                     attr_ty,
+                    config.return_type,
                 ));
                 shared_config.added_flags.insert(FuncType::Get);
             }
@@ -987,6 +1143,7 @@ fn generate_tuple_getter_setter(
                 &get_name,
                 &field_index,
                 attr_ty,
+                shared_config.return_type,
             ));
         }
         if !shared_config.added_flags.contains(&FuncType::GetMut) {
