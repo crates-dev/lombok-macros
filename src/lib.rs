@@ -44,7 +44,7 @@ pub(crate) use syn::{
 ///
 /// # Supported Attributes
 /// - `#[get(pub)]` - Generates a public getter with reference return type
-/// - `#[get(pub, reference)]` - Generates a public getter that returns a reference (`&T`)
+/// - `#[get(pub)]` - Generates a public getter that returns a reference (`&T`)
 /// - `#[get(pub, clone)]` - Generates a public getter that returns a cloned value (`T`)
 /// - `#[get(pub, copy)]` - Generates a public getter that returns a copy of the field value (`self.field`) for Copy types
 /// - `#[get(pub, deref)]` - Generates a public getter that returns a dereferenced value (`*field`) with enhanced match control for Option/Result types
@@ -80,7 +80,7 @@ pub(crate) use syn::{
 /// struct BasicStruct {
 ///     #[get(pub)]
 ///     name: String,
-///     #[get(pub, type(reference))]
+///     #[get(pub)]
 ///     description: String,
 ///     #[get(pub, type(clone))]
 ///     data: Vec<i32>,
@@ -113,7 +113,7 @@ pub(crate) use syn::{
 /// struct OptionalStruct {
 ///     #[get(pub)]
 ///     optional: Option<String>,
-///     #[get(pub, type(reference))]
+///     #[get(pub)]
 ///     optional_ref: Option<String>,
 ///     #[get(pub)]
 ///     result: Result<String, String>,
@@ -459,7 +459,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 ///     #[get(pub)]
 ///     #[set(pub)]
 ///     optional: Option<String>,
-///     #[get(pub, type(reference))]
+///     #[get(pub)]
 ///     result: Result<i32, String>,
 ///     #[get(pub(crate))]
 ///     #[set(private)]

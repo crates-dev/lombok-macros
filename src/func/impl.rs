@@ -132,7 +132,6 @@ impl FromStr for ReturnType {
     #[inline(always)]
     fn from_str(s: &str) -> Result<ReturnType, String> {
         match s {
-            REFERENCE => Ok(ReturnType::Reference),
             CLONE => Ok(ReturnType::Clone),
             COPY => Ok(ReturnType::Copy),
             DEREF => Ok(ReturnType::Deref),

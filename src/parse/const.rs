@@ -34,9 +34,6 @@ pub const SUPER: &str = "super";
 /// Constant for the "pub(super)" visibility modifier.
 pub const PUB_SUPER: &str = "pub(super)";
 
-/// Constant for return reference type.
-pub const REFERENCE: &str = "reference";
-
 /// Constant for return clone type.
 pub const CLONE: &str = "clone";
 
