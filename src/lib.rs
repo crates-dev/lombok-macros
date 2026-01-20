@@ -11,29 +11,28 @@ pub(crate) mod generate;
 pub(crate) mod parse;
 pub(crate) mod visibility;
 
-pub(crate) use config::*;
-pub(crate) use func::*;
-pub(crate) use generate::*;
-pub(crate) use parse::*;
-pub(crate) use visibility::*;
+pub(crate) use {config::*, func::*, generate::*, parse::*, visibility::*};
 
-pub(crate) use proc_macro::TokenStream;
-pub(crate) use proc_macro2::{
-    Delimiter, TokenStream as TokenStream2, TokenTree as TokenTree2, token_stream::IntoIter,
+pub(crate) use {
+    proc_macro::TokenStream,
+    proc_macro2::{
+        Delimiter, TokenStream as TokenStream2, TokenTree as TokenTree2, token_stream::IntoIter,
+    },
+    quote::{ToTokens, format_ident, quote},
+    syn::{
+        Data, DeriveInput, Field, Fields, GenericArgument,
+        GenericParam::{self},
+        Generics, Ident, Index, Lifetime, PathArguments,
+        Type::{self},
+        TypeParam, Variant, WhereClause, parse_macro_input,
+    },
 };
-pub(crate) use quote::{ToTokens, format_ident, quote};
+
 pub(crate) use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
     iter::Peekable,
     str::FromStr,
-};
-pub(crate) use syn::{
-    Data, DeriveInput, Field, Fields, GenericArgument,
-    GenericParam::{self},
-    Generics, Ident, Index, Lifetime, PathArguments,
-    Type::{self},
-    TypeParam, Variant, WhereClause, parse_macro_input,
 };
 
 /// A procedural macro that automatically generates getter methods for struct and enum fields.
