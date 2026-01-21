@@ -5,15 +5,15 @@
 //! custom Debug implementations with field skipping, and Display trait implementations.
 //! Supports structs, enums, generics and lifetimes.
 
-pub(crate) mod config;
-pub(crate) mod func;
-pub(crate) mod generate;
-pub(crate) mod parse;
-pub(crate) mod visibility;
+mod config;
+mod func;
+mod generate;
+mod parse;
+mod visibility;
 
-pub(crate) use {config::*, func::*, generate::*, parse::*, visibility::*};
+use {config::*, func::*, generate::*, parse::*, visibility::*};
 
-pub(crate) use {
+use {
     proc_macro::TokenStream,
     proc_macro2::{
         Delimiter, TokenStream as TokenStream2, TokenTree as TokenTree2, token_stream::IntoIter,
@@ -28,7 +28,7 @@ pub(crate) use {
     },
 };
 
-pub(crate) use std::{
+use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
     iter::Peekable,
