@@ -1,6 +1,6 @@
 [package]
 name = "lombok-macros"
-version = "2.0.19"
+version = "2.0.20"
 readme = "README.md"
 edition = "2024"
 authors = ["root@ltpp.vip"]
@@ -13,8 +13,8 @@ exclude = ["target", "Cargo.lock", "sh", ".github", "debug"]
 
 [dependencies]
 syn = "2.0.114"
-quote = "1.0.43"
-proc-macro2 = "1.0.105"
+quote = "1.0.44"
+proc-macro2 = "1.0.106"
 
 [lib]
 proc-macro = true
