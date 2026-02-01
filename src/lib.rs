@@ -75,7 +75,7 @@ use std::{
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Getter, Clone)]
+/// #[derive(Clone, Getter)]
 /// struct BasicStruct {
 ///     #[get(pub)]
 ///     name: String,
@@ -108,7 +108,7 @@ use std::{
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Getter, Clone)]
+/// #[derive(Clone, Getter)]
 /// struct OptionalStruct {
 ///     #[get(pub)]
 ///     optional: Option<String>,
@@ -136,7 +136,7 @@ use std::{
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Getter, Clone)]
+/// #[derive(Clone, Getter)]
 /// struct TupleStruct(
 ///     #[get(pub)] String,
 ///     #[get(pub, type(clone))] Vec<i32>,
@@ -154,7 +154,7 @@ use std::{
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Getter, Clone)]
+/// #[derive(Clone, Getter)]
 /// struct CopyStruct {
 ///     #[get(pub, type(copy))]
 ///     value: i32,
@@ -182,7 +182,7 @@ use std::{
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Getter, Clone)]
+/// #[derive(Clone, Getter)]
 /// struct DerefStruct {
 ///     #[get(pub, type(deref))]
 ///     optional: Option<bool>,
@@ -220,7 +220,7 @@ use std::{
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Getter, Clone)]
+/// #[derive(Clone, Getter)]
 /// struct GenericStruct<'a, T: Clone> {
 ///     #[get(pub)]
 ///     value: &'a T,
@@ -259,7 +259,7 @@ pub fn getter(input: TokenStream) -> TokenStream {
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(GetterMut, Clone)]
+/// #[derive(Clone, GetterMut)]
 /// struct StructWithLifetimes<'a, 'b, T: Clone> {
 ///     #[get_mut(pub(crate))]
 ///     list: Vec<String>,
@@ -310,7 +310,7 @@ pub fn getter_mut(input: TokenStream) -> TokenStream {
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Setter, Debug, Clone)]
+/// #[derive(Clone, Debug, Setter)]
 /// struct BasicStruct {
 ///     #[set(pub)]
 ///     name: String,
@@ -336,7 +336,7 @@ pub fn getter_mut(input: TokenStream) -> TokenStream {
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Setter, Debug, Clone)]
+/// #[derive(Clone, Debug, Setter)]
 /// struct ConversionStruct {
 ///     #[set(pub, type(AsRef<str>))]
 ///     name: String,
@@ -367,7 +367,7 @@ pub fn getter_mut(input: TokenStream) -> TokenStream {
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Setter, Debug, Clone)]
+/// #[derive(Clone, Debug, Setter)]
 /// struct TupleStruct(
 ///     #[set(pub)] String,
 ///     #[set(pub)] i32,
@@ -409,7 +409,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Data, Debug, Clone)]
+/// #[derive(Clone, Data, Debug)]
 /// struct User {
 ///     #[get(pub)]
 ///     #[set(pub)]
@@ -451,7 +451,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Data, Debug, Clone)]
+/// #[derive(Clone, Data, Debug)]
 /// struct ComplexStruct {
 ///     #[get(pub)]
 ///     id: i32,
@@ -485,7 +485,7 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// ```rust
 /// use lombok_macros::*;
 ///
-/// #[derive(Data, Debug, Clone)]
+/// #[derive(Clone, Data, Debug)]
 /// struct Point(
 ///     #[get(pub)] f64,
 ///     #[get(pub, type(clone))]

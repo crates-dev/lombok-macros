@@ -1,7 +1,7 @@
 use lombok_macros::*;
 use std::{f64::consts::PI, fmt::Debug};
 
-#[derive(Data, Debug, Clone, DisplayDebugFormat)]
+#[derive(Clone, Data, Debug, DisplayDebugFormat)]
 struct LombokTest<'a, T: Clone + Debug> {
     #[get(pub(crate))]
     #[set(pub(crate))]
@@ -18,7 +18,7 @@ struct LombokTest<'a, T: Clone + Debug> {
     user: User,
 }
 
-#[derive(CustomDebug, Clone, Getter, Setter, New)]
+#[derive(Clone, CustomDebug, Getter, New, Setter)]
 struct User {
     #[set(type(AsRef<str>))]
     name: String,
@@ -28,7 +28,7 @@ struct User {
     email: Option<String>,
 }
 
-#[derive(Data, Debug, Clone)]
+#[derive(Clone, Data, Debug)]
 struct TupleStruct(
     #[get(pub)] String,
     #[set(pub)] i32,
@@ -37,7 +37,7 @@ struct TupleStruct(
     bool,
 );
 
-#[derive(Data, Debug, Clone)]
+#[derive(Clone, Data, Debug)]
 struct TraitTestStruct {
     #[set(pub, type(AsRef<str>))]
     name: String,
@@ -50,7 +50,7 @@ struct TraitTestStruct {
     items: Vec<String>,
 }
 
-#[derive(Data, Debug, Clone)]
+#[derive(Clone, Data, Debug)]
 struct TupleWithResult(
     #[get(pub, type(clone))] String,
     #[get(pub)] Result<i32, &'static str>,
@@ -108,7 +108,7 @@ struct Product {
 #[derive(New)]
 struct TuplePoint(f64, #[new(skip)] f64, f64);
 
-#[derive(Data, Debug, Clone)]
+#[derive(Clone, Data, Debug)]
 struct NestedStruct {
     #[get(pub)]
     name: String,
@@ -116,7 +116,7 @@ struct NestedStruct {
     _value: i32,
 }
 
-#[derive(Data, Debug, Clone)]
+#[derive(Clone, Data, Debug)]
 struct ComplexNestedStruct {
     #[get(pub)]
     nested: NestedStruct,
@@ -145,7 +145,7 @@ struct GenericStruct<T: Default + Clone> {
     value: i32,
 }
 
-#[derive(Data, Debug, Clone)]
+#[derive(Clone, Data, Debug)]
 struct LifetimesTest<'a, 'b> {
     #[get(pub)]
     name: &'a str,
@@ -153,7 +153,7 @@ struct LifetimesTest<'a, 'b> {
     description: &'b str,
 }
 
-#[derive(Data, Debug, Clone)]
+#[derive(Clone, Data, Debug)]
 struct EdgeCaseTest {
     #[get(pub)]
     empty_string: String,
@@ -167,7 +167,7 @@ struct EdgeCaseTest {
     option_none: Option<String>,
 }
 
-#[derive(Data, Debug, Clone)]
+#[derive(Clone, Data, Debug)]
 struct CopyTest {
     #[get(skip)]
     _value: i32,
@@ -191,7 +191,7 @@ struct AllSkipped {
     skipped2: i32,
 }
 
-#[derive(Data, Debug, Clone)]
+#[derive(Clone, Data, Debug)]
 struct MultiAttributes {
     #[get(pub, type(clone))]
     #[set(pub(crate), type(Into<Vec<String>>))]

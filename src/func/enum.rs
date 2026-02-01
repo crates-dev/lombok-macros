@@ -7,7 +7,7 @@
 /// - `Debug` - Represents a debug function.
 /// - `New` - Represents a constructor function.
 /// - `Unknown` - Represents an unknown or unspecified function type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub(crate) enum FuncType {
     /// Represents a getter function.
     Get,
@@ -36,7 +36,7 @@ pub(crate) enum FuncType {
 /// - `AsMut` - Uses `impl AsMut<T>` trait bound for parameter conversion.
 /// - `Deref` - Uses `impl Deref<T>` trait bound for parameter conversion.
 /// - `Custom` - Uses a custom trait bound specified by the user.
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub(crate) enum ParameterType {
     /// Uses the field type directly.
     Direct,
