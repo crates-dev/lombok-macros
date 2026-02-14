@@ -240,7 +240,7 @@ fn main() {
     let field2: &bool = tuple_data.get_2();
     assert!(*field2);
     tuple_data.set_2(false);
-    let mut tuple_result = TupleWithResult("test".to_string(), Err("error"));
+    let mut tuple_result: TupleWithResult = TupleWithResult("test".to_string(), Err("error"));
     let try_result: String = tuple_result.get_0();
     assert_eq!(try_result, String::from("test"));
     let try_result: &Result<i32, &str> = tuple_result.try_get_1();
@@ -271,27 +271,27 @@ fn main() {
     let error_debug: String = format!("{error:?}");
     assert!(error_debug.contains("Something went wrong"));
     assert!(!error_debug.contains("500"));
-    let person = Person::new("Alice".to_string(), 30);
+    let person: Person = Person::new("Alice".to_string(), 30);
     assert_eq!(person.name, "Alice");
-    let user = User::new("alice".to_string(), "alice".to_string());
+    let user: User = User::new("alice".to_string(), "alice".to_string());
     assert_eq!(user.email, None);
-    let product = Product::new(1, "Laptop".to_string(), 999.99);
+    let product: Product = Product::new(1, "Laptop".to_string(), 999.99);
     assert_eq!(*product.get_id(), 1);
     assert_eq!(product.get_name(), "Laptop");
-    let tuple_point = TuplePoint::new(10.5, 30.5);
+    let tuple_point: TuplePoint = TuplePoint::new(10.5, 30.5);
     assert_eq!(tuple_point.0, 10.5);
     assert_eq!(tuple_point.1, 0.0);
     assert_eq!(tuple_point.2, 30.5);
-    let public_person = PublicPerson::new("Alice".to_string(), 25);
+    let public_person: PublicPerson = PublicPerson::new("Alice".to_string(), 25);
     assert_eq!(public_person._name, "Alice");
     assert_eq!(public_person._age, 25);
-    let crate_person = CratePerson::new("Bob".to_string(), 35);
+    let crate_person: CratePerson = CratePerson::new("Bob".to_string(), 35);
     assert_eq!(crate_person._name, "Bob");
     assert_eq!(crate_person._age, 35);
-    let private_person = PrivatePerson::new("Charlie".to_string(), 45);
+    let private_person: PrivatePerson = PrivatePerson::new("Charlie".to_string(), 45);
     assert_eq!(private_person._name, "Charlie");
     assert_eq!(private_person._age, 45);
-    let mut trait_test = TraitTestStruct {
+    let mut trait_test: TraitTestStruct = TraitTestStruct {
         name: "test".to_string(),
         value: 42,
         data: vec![1, 2, 3],
@@ -300,7 +300,7 @@ fn main() {
     trait_test.set_name("new name");
     trait_test.set_value(100);
     trait_test.set_data([4, 5, 6, 7]);
-    let new_items = vec!["new1".to_string(), "new2".to_string()];
+    let new_items: Vec<String> = vec!["new1".to_string(), "new2".to_string()];
     trait_test.set_items(new_items);
     assert_eq!(*trait_test.get_name(), "new name");
     assert_eq!(trait_test.get_value(), 100);
@@ -309,54 +309,54 @@ fn main() {
         *trait_test.get_items(),
         vec!["new1".to_string(), "new2".to_string()]
     );
-    let nested = NestedStruct {
+    let nested: NestedStruct = NestedStruct {
         name: "inner".to_string(),
         _value: 42,
     };
-    let mut complex = ComplexNestedStruct {
+    let mut complex: ComplexNestedStruct = ComplexNestedStruct {
         nested: nested.clone(),
         nested_list: vec![nested],
         metadata: std::collections::HashMap::new(),
     };
     complex.set_metadata({
-        let mut map = std::collections::HashMap::new();
+        let mut map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
         map.insert("key".to_string(), "value".to_string());
         map
     });
     assert_eq!(complex.get_nested().get_name(), "inner");
     assert_eq!(complex.get_nested_list().len(), 1);
     assert_eq!(complex.get_metadata().get("key").unwrap(), "value");
-    let simple = ComplexEnum::Simple;
-    let tuple = ComplexEnum::Tuple("test".to_string(), 123);
-    let struct_variant = ComplexEnum::Struct {
+    let simple: ComplexEnum = ComplexEnum::Simple;
+    let tuple: ComplexEnum = ComplexEnum::Tuple("test".to_string(), 123);
+    let struct_variant: ComplexEnum = ComplexEnum::Struct {
         field1: "visible".to_string(),
         _secret: "hidden".to_string(),
         value: PI,
     };
-    let simple_debug = format!("{simple:?}");
-    let tuple_debug = format!("{tuple:?}");
-    let struct_debug = format!("{struct_variant:?}");
+    let simple_debug: String = format!("{simple:?}");
+    let tuple_debug: String = format!("{tuple:?}");
+    let struct_debug: String = format!("{struct_variant:?}");
     assert!(simple_debug.contains("Simple"));
     assert!(tuple_debug.contains("test"));
     assert!(tuple_debug.contains("123"));
     assert!(struct_debug.contains("visible"));
     assert!(!struct_debug.contains("hidden"));
     assert!(struct_debug.contains("3.14"));
-    let generic_i32 = GenericStruct::<i32> {
+    let generic_i32: GenericStruct<i32> = GenericStruct::<i32> {
         data: 0,
         value: 100,
     };
-    let generic_string = GenericStruct::<String>::new(200);
+    let generic_string: GenericStruct<String> = GenericStruct::<String>::new(200);
     assert_eq!(generic_i32.value, 100);
     assert_eq!(generic_i32.data, 0);
     assert_eq!(generic_string.value, 200);
     assert_eq!(generic_string.data, "");
-    let name = "rust";
-    let description = "language";
-    let lifetimes_test = LifetimesTest { name, description };
+    let name: &str = "rust";
+    let description: &str = "language";
+    let lifetimes_test: LifetimesTest<'_, '_> = LifetimesTest { name, description };
     assert_eq!(*lifetimes_test.get_name(), "rust");
     assert_eq!(*lifetimes_test.get_description(), "language");
-    let edge_case = EdgeCaseTest {
+    let edge_case: EdgeCaseTest = EdgeCaseTest {
         empty_string: String::new(),
         empty_vec: Vec::new(),
         zero_value: 0,
@@ -368,21 +368,21 @@ fn main() {
     assert_eq!(edge_case.get_zero_value(), 0);
     assert!(!edge_case.get_bool_false());
     assert!(edge_case.try_get_option_none().is_none());
-    let unit_get = UnitGetSet { flag: true };
-    let flag_ref = unit_get.get_flag();
+    let unit_get: UnitGetSet = UnitGetSet { flag: true };
+    let flag_ref: &bool = unit_get.get_flag();
     assert!(*flag_ref);
-    let constructed = AllSkipped::new();
+    let constructed: AllSkipped = AllSkipped::new();
     assert_eq!(constructed.skipped1, "");
     assert_eq!(constructed.skipped2, 0);
-    let multi = MultiAttributes {
+    let multi: MultiAttributes = MultiAttributes {
         complex_field: vec!["test".to_string()],
     };
-    let cloned_field = multi.get_complex_field();
+    let cloned_field: Vec<String> = multi.get_complex_field();
     assert_eq!(cloned_field, vec!["test".to_string()]);
-    let mut mutated = multi;
-    let new_vec = vec!["new".to_string(), "values".to_string()];
+    let mut mutated: MultiAttributes = multi;
+    let new_vec: Vec<String> = vec!["new".to_string(), "values".to_string()];
     mutated.set_complex_field(new_vec.clone());
-    let updated = mutated.get_complex_field();
+    let updated: Vec<String> = mutated.get_complex_field();
     assert_eq!(updated, new_vec);
     let copy_test = CopyTest {
         _value: 42,
