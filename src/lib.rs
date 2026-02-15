@@ -20,11 +20,8 @@ use {
     },
     quote::{ToTokens, format_ident, quote},
     syn::{
-        Data, DeriveInput, Field, Fields, GenericArgument,
-        GenericParam::{self},
-        Generics, Ident, Index, Lifetime, PathArguments,
-        Type::{self},
-        TypeParam, Variant, WhereClause, parse_macro_input,
+        Data, DeriveInput, Field, Fields, GenericArgument, GenericParam, Generics, Ident, Index,
+        Lifetime, PathArguments, Type, TypeParam, Variant, WhereClause, parse_macro_input, parse2,
     },
 };
 
