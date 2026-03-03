@@ -74,14 +74,12 @@ fn is_result_type(ty: &Type) -> bool {
 fn extract_option_inner_type(ty: &Type) -> Option<Type> {
     match ty {
         Type::Path(type_path) => {
-            if let Some(segment) = type_path.path.segments.last() {
-                if segment.ident == OPTION_TYPE {
-                    if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                        if let Some(GenericArgument::Type(inner_ty)) = args.args.first() {
-                            return Some(inner_ty.clone());
-                        }
-                    }
-                }
+            if let Some(segment) = type_path.path.segments.last()
+                && segment.ident == OPTION_TYPE
+                && let PathArguments::AngleBracketed(args) = &segment.arguments
+                && let Some(GenericArgument::Type(inner_ty)) = args.args.first()
+            {
+                return Some(inner_ty.clone());
             }
             None
         }
@@ -101,20 +99,19 @@ fn extract_option_inner_type(ty: &Type) -> Option<Type> {
 fn extract_result_types(ty: &Type) -> Option<(Type, Type)> {
     match ty {
         Type::Path(type_path) => {
-            if let Some(segment) = type_path.path.segments.last() {
-                if segment.ident == RESULT_TYPE {
-                    if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                        let mut types = args.args.iter().filter_map(|arg| {
-                            if let GenericArgument::Type(inner_ty) = arg {
-                                Some(inner_ty.clone())
-                            } else {
-                                None
-                            }
-                        });
-                        if let (Some(ok_ty), Some(err_ty)) = (types.next(), types.next()) {
-                            return Some((ok_ty, err_ty));
-                        }
+            if let Some(segment) = type_path.path.segments.last()
+                && segment.ident == RESULT_TYPE
+                && let PathArguments::AngleBracketed(args) = &segment.arguments
+            {
+                let mut types = args.args.iter().filter_map(|arg| {
+                    if let GenericArgument::Type(inner_ty) = arg {
+                        Some(inner_ty.clone())
+                    } else {
+                        None
                     }
+                });
+                if let (Some(ok_ty), Some(err_ty)) = (types.next(), types.next()) {
+                    return Some((ok_ty, err_ty));
                 }
             }
             None

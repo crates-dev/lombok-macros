@@ -61,19 +61,18 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                     }
                 } else if ident_str == PRIVATE {
                     config.visibility = Visibility::Private;
-                } else if ident_str == CUSTOM_TYPE {
-                    if let Some(TokenTree2::Group(group)) = tokens_iter.peek() {
-                        if group.delimiter() == Delimiter::Parenthesis {
-                            let type_group: TokenTree2 = tokens_iter.next().unwrap();
-                            if let TokenTree2::Group(group) = type_group {
-                                config.return_type = group
-                                    .stream()
-                                    .to_string()
-                                    .parse::<ReturnType>()
-                                    .unwrap_or_default();
-                                config.param_type_override = Some(group.stream());
-                            }
-                        }
+                } else if ident_str == CUSTOM_TYPE
+                    && let Some(TokenTree2::Group(group)) = tokens_iter.peek()
+                    && group.delimiter() == Delimiter::Parenthesis
+                {
+                    let type_group: TokenTree2 = tokens_iter.next().unwrap();
+                    if let TokenTree2::Group(group) = type_group {
+                        config.return_type = group
+                            .stream()
+                            .to_string()
+                            .parse::<ReturnType>()
+                            .unwrap_or_default();
+                        config.param_type_override = Some(group.stream());
                     }
                 }
             }
