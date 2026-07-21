@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 /// Parses the derive macro attributes to extract visibility information for the New constructor.
 ///

@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 /// Implements the `FromStr` trait for `FuncType` to parse string representations into `FuncType` variants.
 impl FromStr for FuncType {

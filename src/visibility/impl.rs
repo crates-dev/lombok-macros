@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 impl Visibility {
     /// Converts the `Visibility` enum variant into a token stream representation.
@@ -31,13 +31,13 @@ impl Display for Visibility {
     /// - `Result` - indicating success or failure of the formatting operation.
     #[inline(always)]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let s: &str = match self {
+        let text: &str = match self {
             Visibility::Public => PUB,
             Visibility::PublicCrate => PUB_CRATE,
             Visibility::PublicSuper => PUB_SUPER,
             Visibility::Private => PRIVATE,
         };
-        write!(f, "{s}")
+        write!(f, "{text}")
     }
 }
 

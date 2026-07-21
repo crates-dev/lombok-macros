@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 /// Parses the provided token stream and modifies the given configuration.
 ///

@@ -1,5 +1,4 @@
-use crate::*;
-use std::collections::HashSet;
+use super::*;
 
 /// Represents the configuration for function types, visibility, return type, and skipping behavior.
 ///

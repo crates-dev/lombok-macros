@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 /// Cleans an attribute string by removing the "r#" prefix if present.
 ///
