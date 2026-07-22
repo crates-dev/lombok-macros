@@ -16,16 +16,17 @@ pub(crate) fn parse_new_visibility(input: &DeriveInput) -> Visibility {
         if attr.path().is_ident(NEW)
             && let Ok(meta_list) = attr.meta.require_list()
         {
-            let tokens: TokenStream2 = meta_list.tokens.clone();
+            let tokens: proc_macro2::TokenStream = meta_list.tokens.clone();
             let mut visibility: Visibility = Visibility::Public;
             let mut iter: IntoIter = tokens.into_iter();
             while let Some(token) = iter.next() {
                 match token {
-                    TokenTree2::Ident(ident) => {
+                    proc_macro2::TokenTree::Ident(ident) => {
                         if let Ok(parsed_visibility) = ident.to_string().parse::<Visibility>() {
                             match parsed_visibility {
                                 Visibility::Public => {
-                                    if let Some(TokenTree2::Group(group)) = iter.next() {
+                                    if let Some(proc_macro2::TokenTree::Group(group)) = iter.next()
+                                    {
                                         if group.delimiter() == Delimiter::Parenthesis {
                                             visibility = group
                                                 .stream()
@@ -51,9 +52,9 @@ pub(crate) fn parse_new_visibility(input: &DeriveInput) -> Visibility {
                             }
                         }
                     }
-                    TokenTree2::Group(group) => {
+                    proc_macro2::TokenTree::Group(group) => {
                         for sub_token in group.stream().into_iter() {
-                            if let TokenTree2::Ident(ident) = sub_token {
+                            if let proc_macro2::TokenTree::Ident(ident) = sub_token {
                                 visibility = ident
                                     .to_string()
                                     .parse::<Visibility>()

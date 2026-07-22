@@ -8,11 +8,11 @@ use super::*;
 ///
 /// # Returns
 /// - The function does not return a value. It modifies the provided `config` in place.
-pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
+pub(crate) fn parse_tokens(tokens: proc_macro2::TokenStream, config: &mut Config) {
     let mut tokens_iter: Peekable<IntoIter> = tokens.into_iter().peekable();
     while let Some(token) = tokens_iter.next() {
         match token {
-            TokenTree2::Ident(ident) => {
+            proc_macro2::TokenTree::Ident(ident) => {
                 let ident_str: String = ident.to_string();
                 if FuncType::is_known(&ident_str) {
                     if config.func_type.is_unknown() {
@@ -45,7 +45,7 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                     }
                 } else if ident_str == PUB {
                     let mut lookahead: Peekable<IntoIter> = tokens_iter.clone();
-                    if let Some(TokenTree2::Group(group)) = lookahead.next() {
+                    if let Some(proc_macro2::TokenTree::Group(group)) = lookahead.next() {
                         if group.delimiter() == Delimiter::Parenthesis {
                             let group_content = group.stream().to_string();
                             if group_content == CRATE {
@@ -62,11 +62,11 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                 } else if ident_str == PRIVATE {
                     config.visibility = Visibility::Private;
                 } else if ident_str == CUSTOM_TYPE
-                    && let Some(TokenTree2::Group(group)) = tokens_iter.peek()
+                    && let Some(proc_macro2::TokenTree::Group(group)) = tokens_iter.peek()
                     && group.delimiter() == Delimiter::Parenthesis
                 {
-                    let type_group: TokenTree2 = tokens_iter.next().unwrap();
-                    if let TokenTree2::Group(group) = type_group {
+                    let type_group: proc_macro2::TokenTree = tokens_iter.next().unwrap();
+                    if let proc_macro2::TokenTree::Group(group) = type_group {
                         config.return_type = group
                             .stream()
                             .to_string()
@@ -76,7 +76,7 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
                     }
                 }
             }
-            TokenTree2::Group(group) => {
+            proc_macro2::TokenTree::Group(group) => {
                 parse_tokens(group.stream(), config);
             }
             _ => {}
@@ -91,7 +91,7 @@ pub(crate) fn parse_tokens(tokens: TokenStream2, config: &mut Config) {
 ///
 /// # Returns
 /// - A `Config` structure representing the parsed configuration based on the attributes in the token stream.
-pub(crate) fn analyze_attributes(tokens: TokenStream2) -> Config {
+pub(crate) fn analyze_attributes(tokens: proc_macro2::TokenStream) -> Config {
     let mut config: Config = Config::default();
     parse_tokens(tokens, &mut config);
     config

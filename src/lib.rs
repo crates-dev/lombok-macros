@@ -15,9 +15,7 @@ use {config::*, func::*, generate::*, parse::*, visibility::*};
 
 use {
     proc_macro::TokenStream,
-    proc_macro2::{
-        Delimiter, TokenStream as TokenStream2, TokenTree as TokenTree2, token_stream::IntoIter,
-    },
+    proc_macro2::{Delimiter, token_stream::IntoIter},
     quote::{ToTokens, format_ident, quote},
     syn::{
         Data, DeriveInput, Field, Fields, GenericArgument, GenericParam, Generics, Ident, Index,
@@ -501,12 +499,12 @@ pub fn setter(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_derive(Data, attributes(get, get_mut, set))]
 pub fn data(input: TokenStream) -> TokenStream {
-    let mut result: TokenStream2 = TokenStream2::new();
+    let mut result: proc_macro2::TokenStream = proc_macro2::TokenStream::new();
     let lombok_data: TokenStream = inner_lombok_data(input.clone(), true, true, true);
     result.extend(
         lombok_data
             .to_string()
-            .parse::<TokenStream2>()
+            .parse::<proc_macro2::TokenStream>()
             .unwrap_or_default(),
     );
     result.into()

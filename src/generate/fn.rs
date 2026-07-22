@@ -198,8 +198,8 @@ fn is_arc_type(ty: &Type) -> bool {
 /// - `TokenStream2` - The generated parameter type as tokens.
 fn generate_param_type(
     field_type: &Type,
-    param_type_override: Option<&TokenStream2>,
-) -> TokenStream2 {
+    param_type_override: Option<&proc_macro2::TokenStream>,
+) -> proc_macro2::TokenStream {
     if let Some(override_type) = param_type_override {
         let type_str: String = override_type.to_string();
         let type_str_normalized: String = type_str.replace(' ', "");
@@ -212,13 +212,13 @@ fn generate_param_type(
                 if let Ok(parsed_type) = parse2::<Type>(override_type.clone()) {
                     quote! { impl #parsed_type }
                 } else {
-                    let type_tokens: TokenStream2 = override_type.clone();
+                    let type_tokens: proc_macro2::TokenStream = override_type.clone();
                     quote! { impl #type_tokens }
                 }
             }
             ParameterType::Direct => override_type.clone(),
             ParameterType::Custom(custom_tokens) => {
-                let custom_tokens_stream: TokenStream2 = custom_tokens
+                let custom_tokens_stream: proc_macro2::TokenStream = custom_tokens
                     .parse()
                     .unwrap_or_else(|_| override_type.clone());
                 if let Ok(parsed_type) = parse2::<Type>(custom_tokens_stream.clone()) {
@@ -245,8 +245,8 @@ fn generate_param_type(
 /// - `TokenStream2` - The generated assignment expression.
 fn generate_assignment(
     field_ident: &proc_macro2::Ident,
-    param_type_override: Option<&TokenStream2>,
-) -> TokenStream2 {
+    param_type_override: Option<&proc_macro2::TokenStream>,
+) -> proc_macro2::TokenStream {
     if let Some(override_type) = param_type_override {
         let type_str: String = override_type.to_string();
         let type_str_normalized: String = type_str.replace(' ', "");
@@ -282,8 +282,8 @@ fn generate_assignment(
 /// - `TokenStream2` - The generated assignment expression.
 fn generate_assignment_tuple(
     field_index: &Index,
-    param_type_override: Option<&TokenStream2>,
-) -> TokenStream2 {
+    param_type_override: Option<&proc_macro2::TokenStream>,
+) -> proc_macro2::TokenStream {
     if let Some(override_type) = param_type_override {
         let type_str: String = override_type.to_string();
         let type_str_normalized: String = type_str.replace(' ', "");
@@ -317,7 +317,7 @@ fn generate_assignment_tuple(
 /// # Returns
 ///
 /// - `TokenStream2` - The generated return type as tokens.
-fn generate_return_type(field_type: &Type, return_type: ReturnType) -> TokenStream2 {
+fn generate_return_type(field_type: &Type, return_type: ReturnType) -> proc_macro2::TokenStream {
     match return_type {
         ReturnType::Reference => {
             if is_option_type(field_type) || is_result_type(field_type) {
@@ -392,16 +392,16 @@ fn generate_return_type(field_type: &Type, return_type: ReturnType) -> TokenStre
 /// - `TokenStream2` - The generated getter function.
 fn build_named_get_quote(
     need_getter: bool,
-    vis: TokenStream2,
+    vis: proc_macro2::TokenStream,
     get_name: &Ident,
     attr_name_ident: &Ident,
     attr_ty: &Type,
     return_type: ReturnType,
-) -> TokenStream2 {
+) -> proc_macro2::TokenStream {
     if !need_getter {
         return quote! {};
     }
-    let return_ty: TokenStream2 = generate_return_type(attr_ty, return_type);
+    let return_ty: proc_macro2::TokenStream = generate_return_type(attr_ty, return_type);
     match return_type {
         ReturnType::Reference => {
             if is_option_type(attr_ty) || is_result_type(attr_ty) {
@@ -495,12 +495,12 @@ fn build_named_get_quote(
 /// - `TokenStream2` - The generated try getter function.
 fn build_named_try_get_quote(
     need_getter: bool,
-    vis: TokenStream2,
+    vis: proc_macro2::TokenStream,
     get_name: &Ident,
     attr_name_ident: &Ident,
     attr_ty: &Type,
     return_type: ReturnType,
-) -> TokenStream2 {
+) -> proc_macro2::TokenStream {
     if !need_getter || !is_option_type(attr_ty) && !is_result_type(attr_ty) {
         return quote! {};
     }
@@ -567,11 +567,11 @@ fn build_named_try_get_quote(
 /// - `TokenStream2` - The generated mutable getter function.
 fn build_named_get_mut_quote(
     need_getter_mut: bool,
-    vis: TokenStream2,
+    vis: proc_macro2::TokenStream,
     get_mut_name: &Ident,
     attr_name_ident: &Ident,
     attr_ty: &Type,
-) -> TokenStream2 {
+) -> proc_macro2::TokenStream {
     if need_getter_mut {
         quote! {
             #[inline(always)]
@@ -598,15 +598,17 @@ fn build_named_get_mut_quote(
 /// - `TokenStream2` - The generated getter and setter functions.
 fn build_named_set_quote(
     need_setter: bool,
-    vis: TokenStream2,
+    vis: proc_macro2::TokenStream,
     set_name: &Ident,
     attr_name_ident: &Ident,
     attr_ty: &Type,
-    param_type_override: Option<&TokenStream2>,
-) -> TokenStream2 {
+    param_type_override: Option<&proc_macro2::TokenStream>,
+) -> proc_macro2::TokenStream {
     if need_setter {
-        let param_type: TokenStream2 = generate_param_type(attr_ty, param_type_override);
-        let assignment: TokenStream2 = generate_assignment(attr_name_ident, param_type_override);
+        let param_type: proc_macro2::TokenStream =
+            generate_param_type(attr_ty, param_type_override);
+        let assignment: proc_macro2::TokenStream =
+            generate_assignment(attr_name_ident, param_type_override);
         quote! {
             #[inline(always)]
             #vis fn #set_name(&mut self, val: #param_type) -> &mut Self {
@@ -636,14 +638,14 @@ fn generate_named_getter_setter(
     need_getter: bool,
     need_getter_mut: bool,
     need_setter: bool,
-) -> TokenStream2 {
+) -> proc_macro2::TokenStream {
     let attr_name_ident: &Ident = field.ident.as_ref().expect(FIELD_SHOULD_HAVE_A_NAME);
     let attr_ty: &Type = &field.ty;
     let clean_attr_name: String = get_clean_attr_name(&attr_name_ident.to_string());
     let get_name: Ident = format_ident!("{}{}", GET_METHOD_PREFIX, clean_attr_name);
     let get_mut_name: Ident = format_ident!("{}{}", GET_MUT_METHOD_PREFIX, clean_attr_name);
     let set_name: Ident = format_ident!("{}{}", SET_METHOD_PREFIX, clean_attr_name);
-    let mut generated: TokenStream2 = quote! {};
+    let mut generated: proc_macro2::TokenStream = quote! {};
     let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
     let mut shared_config: Config = Config::default();
     for attr in &field.attrs {
@@ -670,7 +672,7 @@ fn generate_named_getter_setter(
             {
                 continue;
             }
-            let vis: TokenStream2 = config.visibility.to_token_stream();
+            let vis: proc_macro2::TokenStream = config.visibility.to_token_stream();
             if config.func_type.is_get()
                 && !config.skip_flags.contains(&FuncType::Get)
                 && !shared_config.added_flags.contains(&FuncType::Get)
@@ -726,7 +728,7 @@ fn generate_named_getter_setter(
         || !shared_config.added_flags.contains(&FuncType::GetMut)
         || !shared_config.added_flags.contains(&FuncType::Set)
     {
-        let vis: TokenStream2 = shared_config.visibility.to_token_stream();
+        let vis: proc_macro2::TokenStream = shared_config.visibility.to_token_stream();
         if !shared_config.added_flags.contains(&FuncType::Get) {
             generated.extend(build_named_get_quote(
                 need_getter,
@@ -784,16 +786,16 @@ fn generate_named_getter_setter(
 /// - `TokenStream2` - The generated getter function.
 fn build_tuple_get_quote(
     need_getter: bool,
-    vis: TokenStream2,
+    vis: proc_macro2::TokenStream,
     get_name: &Ident,
     field_index: &Index,
     attr_ty: &Type,
     return_type: ReturnType,
-) -> TokenStream2 {
+) -> proc_macro2::TokenStream {
     if !need_getter {
         return quote! {};
     }
-    let return_ty: TokenStream2 = generate_return_type(attr_ty, return_type);
+    let return_ty: proc_macro2::TokenStream = generate_return_type(attr_ty, return_type);
     match return_type {
         ReturnType::Reference => {
             if is_option_type(attr_ty) || is_result_type(attr_ty) {
@@ -873,12 +875,12 @@ fn build_tuple_get_quote(
 /// - `TokenStream2` - The generated try getter function.
 fn build_tuple_try_get_quote(
     need_getter: bool,
-    vis: TokenStream2,
+    vis: proc_macro2::TokenStream,
     get_name: &Ident,
     field_index: &Index,
     attr_ty: &Type,
     return_type: ReturnType,
-) -> TokenStream2 {
+) -> proc_macro2::TokenStream {
     if !need_getter || !is_option_type(attr_ty) && !is_result_type(attr_ty) {
         return quote! {};
     }
@@ -945,11 +947,11 @@ fn build_tuple_try_get_quote(
 /// - `TokenStream2` - The generated mutable getter function.
 fn build_tuple_get_mut_quote(
     need_getter_mut: bool,
-    vis: TokenStream2,
+    vis: proc_macro2::TokenStream,
     get_mut_name: &Ident,
     field_index: &Index,
     attr_ty: &Type,
-) -> TokenStream2 {
+) -> proc_macro2::TokenStream {
     if need_getter_mut {
         quote! {
             #[inline(always)]
@@ -977,15 +979,17 @@ fn build_tuple_get_mut_quote(
 /// - `TokenStream2` - The generated getter and setter functions.
 fn build_tuple_set_quote(
     need_setter: bool,
-    vis: TokenStream2,
+    vis: proc_macro2::TokenStream,
     set_name: &Ident,
     field_index: &Index,
     attr_ty: &Type,
-    param_type_override: Option<&TokenStream2>,
-) -> TokenStream2 {
+    param_type_override: Option<&proc_macro2::TokenStream>,
+) -> proc_macro2::TokenStream {
     if need_setter {
-        let param_type: TokenStream2 = generate_param_type(attr_ty, param_type_override);
-        let assignment: TokenStream2 = generate_assignment_tuple(field_index, param_type_override);
+        let param_type: proc_macro2::TokenStream =
+            generate_param_type(attr_ty, param_type_override);
+        let assignment: proc_macro2::TokenStream =
+            generate_assignment_tuple(field_index, param_type_override);
         quote! {
             #[inline(always)]
             #vis fn #set_name(&mut self, val: #param_type) -> &mut Self {
@@ -1017,13 +1021,13 @@ fn generate_tuple_getter_setter(
     need_getter: bool,
     need_getter_mut: bool,
     need_setter: bool,
-) -> TokenStream2 {
+) -> proc_macro2::TokenStream {
     let attr_ty: &Type = &field.ty;
     let get_name: Ident = format_ident!("{}{}", GET_METHOD_PREFIX, index);
     let get_mut_name: Ident = format_ident!("{}{}", GET_MUT_METHOD_PREFIX, index);
     let set_name: Ident = format_ident!("{}{}", SET_METHOD_PREFIX, index);
     let field_index: Index = Index::from(index);
-    let mut generated: TokenStream2 = quote! {};
+    let mut generated: proc_macro2::TokenStream = quote! {};
     let mut config_map: HashMap<String, Vec<Config>> = HashMap::new();
     let mut shared_config: Config = Config::default();
     for attr in &field.attrs {
@@ -1050,7 +1054,7 @@ fn generate_tuple_getter_setter(
             {
                 continue;
             }
-            let vis: TokenStream2 = config.visibility.to_token_stream();
+            let vis: proc_macro2::TokenStream = config.visibility.to_token_stream();
             if config.func_type.is_get()
                 && !config.skip_flags.contains(&FuncType::Get)
                 && !shared_config.added_flags.contains(&FuncType::Get)
@@ -1106,7 +1110,7 @@ fn generate_tuple_getter_setter(
         || !shared_config.added_flags.contains(&FuncType::GetMut)
         || !shared_config.added_flags.contains(&FuncType::Set)
     {
-        let vis: TokenStream2 = shared_config.visibility.to_token_stream();
+        let vis: proc_macro2::TokenStream = shared_config.visibility.to_token_stream();
         if !shared_config.added_flags.contains(&FuncType::Get) {
             generated.extend(build_tuple_get_quote(
                 need_getter,
@@ -1167,7 +1171,7 @@ pub(crate) fn generate_getter_setter(
     need_getter: bool,
     need_getter_mut: bool,
     need_setter: bool,
-) -> TokenStream2 {
+) -> proc_macro2::TokenStream {
     if let Some(index) = field_index {
         generate_tuple_getter_setter(field, index, need_getter, need_getter_mut, need_setter)
     } else {
@@ -1232,7 +1236,7 @@ pub(crate) fn inner_lombok_data(
         })
         .collect();
     let where_clause: &Option<WhereClause> = &input.generics.where_clause;
-    let methods: Vec<TokenStream2> = match input.data {
+    let methods: Vec<proc_macro2::TokenStream> = match input.data {
         Data::Struct(ref s) => match &s.fields {
             Fields::Named(_) => s
                 .fields
@@ -1259,7 +1263,7 @@ pub(crate) fn inner_lombok_data(
         },
         _ => panic!("{}", UNSUPPORTED_DATA_DERIVE),
     };
-    let expanded: TokenStream2 = if lifetimes.is_empty() {
+    let expanded: proc_macro2::TokenStream = if lifetimes.is_empty() {
         if type_bounds.is_empty() {
             quote! {
                 impl #name #where_clause {
@@ -1267,8 +1271,8 @@ pub(crate) fn inner_lombok_data(
                 }
             }
         } else {
-            let type_bounds_generics: TokenStream2 = quote! { #(#type_bounds),* };
-            let type_generics: TokenStream2 = quote! { #(#types),* };
+            let type_bounds_generics: proc_macro2::TokenStream = quote! { #(#type_bounds),* };
+            let type_generics: proc_macro2::TokenStream = quote! { #(#types),* };
             quote! {
                 impl<#type_bounds_generics> #name<#type_generics> #where_clause {
                     #(#methods)*
@@ -1276,7 +1280,7 @@ pub(crate) fn inner_lombok_data(
             }
         }
     } else {
-        let lifetimes_generics: TokenStream2 = quote! { #(#lifetimes),* };
+        let lifetimes_generics: proc_macro2::TokenStream = quote! { #(#lifetimes),* };
         if type_bounds.is_empty() {
             quote! {
                 impl<#lifetimes_generics> #name<#lifetimes_generics> #where_clause {
@@ -1284,8 +1288,8 @@ pub(crate) fn inner_lombok_data(
                 }
             }
         } else {
-            let type_bounds_generics: TokenStream2 = quote! { #(#type_bounds),* };
-            let type_generics: TokenStream2 = quote! { #(#types),* };
+            let type_bounds_generics: proc_macro2::TokenStream = quote! { #(#type_bounds),* };
+            let type_generics: proc_macro2::TokenStream = quote! { #(#types),* };
             quote! {
                 impl<#lifetimes_generics, #type_bounds_generics> #name<#lifetimes_generics, #type_generics> #where_clause {
                     #(#methods)*
@@ -1311,7 +1315,7 @@ pub(super) fn inner_display(input: TokenStream, is_format: bool) -> TokenStream 
     let name: &Ident = &input.ident;
     let generics: &Generics = &input.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-    let expanded: TokenStream2 = if is_format {
+    let expanded: proc_macro2::TokenStream = if is_format {
         quote! {
             impl #impl_generics std::fmt::Display for #name #ty_generics #where_clause {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -1376,7 +1380,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
             let fields: &Fields = &data_struct.fields;
             match fields {
                 Fields::Named(_) => {
-                    let debug_fields: Vec<TokenStream2> = fields
+                    let debug_fields: Vec<proc_macro2::TokenStream> = fields
                         .iter()
                         .filter_map(|field: &Field| {
                             let field_name: &Ident = field.ident.as_ref()?;
@@ -1401,7 +1405,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                         })
                         .collect();
                     let struct_name_str: String = name.to_string();
-                    let expanded: TokenStream2 = quote! {
+                    let expanded: proc_macro2::TokenStream = quote! {
                         impl #impl_generics std::fmt::Debug for #name #ty_generics #where_clause {
                             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                                 f.debug_struct(#struct_name_str)
@@ -1413,7 +1417,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                     TokenStream::from(expanded)
                 }
                 Fields::Unnamed(_) => {
-                    let debug_fields: Vec<TokenStream2> = fields
+                    let debug_fields: Vec<proc_macro2::TokenStream> = fields
                         .iter()
                         .enumerate()
                         .filter_map(|(i, field): (usize, &Field)| {
@@ -1438,7 +1442,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                         })
                         .collect();
                     let struct_name_str: String = name.to_string();
-                    let expanded: TokenStream2 = quote! {
+                    let expanded: proc_macro2::TokenStream = quote! {
                         impl #impl_generics std::fmt::Debug for #name #ty_generics #where_clause {
                             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                                 f.debug_tuple(#struct_name_str)
@@ -1451,7 +1455,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                 }
                 Fields::Unit => {
                     let struct_name_str: String = name.to_string();
-                    let expanded: TokenStream2 = quote! {
+                    let expanded: proc_macro2::TokenStream = quote! {
                         impl #impl_generics std::fmt::Debug for #name #ty_generics #where_clause {
                             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                                 f.debug_struct(#struct_name_str).finish()
@@ -1463,7 +1467,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
             }
         }
         Data::Enum(data_enum) => {
-            let variants: Vec<TokenStream2> = data_enum
+            let variants: Vec<proc_macro2::TokenStream> = data_enum
                 .variants
                 .iter()
                 .map(|variant: &Variant| {
@@ -1471,7 +1475,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                     let variant_name_str: String = variant_name.to_string();
                     match &variant.fields {
                         Fields::Named(fields_named) => {
-                            let field_patterns: Vec<TokenStream2> = fields_named
+                            let field_patterns: Vec<proc_macro2::TokenStream> = fields_named
                                 .named
                                 .iter()
                                 .map(|field: &Field| {
@@ -1479,7 +1483,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                                     quote! { #field_name }
                                 })
                                 .collect();
-                            let debug_fields: Vec<TokenStream2> = fields_named
+                            let debug_fields: Vec<proc_macro2::TokenStream> = fields_named
                                 .named
                                 .iter()
                                 .filter_map(|field: &Field| {
@@ -1514,7 +1518,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                             }
                         }
                         Fields::Unnamed(fields_unnamed) => {
-                            let field_patterns: Vec<TokenStream2> = fields_unnamed
+                            let field_patterns: Vec<proc_macro2::TokenStream> = fields_unnamed
                                 .unnamed
                                 .iter()
                                 .enumerate()
@@ -1523,7 +1527,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                                     quote! { #field_name }
                                 })
                                 .collect();
-                            let debug_fields: Vec<TokenStream2> = fields_unnamed
+                            let debug_fields: Vec<proc_macro2::TokenStream> = fields_unnamed
                                 .unnamed
                                 .iter()
                                 .enumerate()
@@ -1567,7 +1571,7 @@ pub(crate) fn inner_custom_debug(input: TokenStream) -> TokenStream {
                     }
                 })
                 .collect();
-            let expanded: TokenStream2 = quote! {
+            let expanded: proc_macro2::TokenStream = quote! {
                 impl #impl_generics std::fmt::Debug for #name #ty_generics #where_clause {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         match self {
@@ -1692,16 +1696,16 @@ pub(crate) fn inner_new_constructor(input: &DeriveInput, visibility: Visibility)
         },
         _ => Vec::new(),
     };
-    let params: Vec<TokenStream2> = fields_info
+    let params: Vec<proc_macro2::TokenStream> = fields_info
         .iter()
         .map(|(field_name, field_type)| {
             quote! { #field_name: #field_type }
         })
         .collect();
-    let constructor_fields: TokenStream2 = match &input.data {
+    let constructor_fields: proc_macro2::TokenStream = match &input.data {
         Data::Struct(data_struct) => match &data_struct.fields {
             Fields::Named(_) => {
-                let field_initializers: Vec<TokenStream2> = data_struct
+                let field_initializers: Vec<proc_macro2::TokenStream> = data_struct
                     .fields
                     .iter()
                     .filter_map(|field| {
@@ -1716,7 +1720,7 @@ pub(crate) fn inner_new_constructor(input: &DeriveInput, visibility: Visibility)
                 quote! { { #(#field_initializers),* } }
             }
             Fields::Unnamed(_) => {
-                let field_initializers: Vec<TokenStream2> = data_struct
+                let field_initializers: Vec<proc_macro2::TokenStream> = data_struct
                     .fields
                     .iter()
                     .enumerate()
@@ -1742,8 +1746,8 @@ pub(crate) fn inner_new_constructor(input: &DeriveInput, visibility: Visibility)
         },
         _ => panic!("{}", UNSUPPORTED_NEW_DERIVE),
     };
-    let vis_tokens: TokenStream2 = visibility.to_token_stream();
-    let expanded: TokenStream2 = quote! {
+    let vis_tokens: proc_macro2::TokenStream = visibility.to_token_stream();
+    let expanded: proc_macro2::TokenStream = quote! {
         impl #impl_generics #name #ty_generics #where_clause {
             #[inline(always)]
             #vis_tokens fn new(#(#params),*) -> Self {

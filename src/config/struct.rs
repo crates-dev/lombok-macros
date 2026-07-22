@@ -22,7 +22,7 @@ pub(crate) struct Config {
     /// A `ReturnType` that specifies the return type behavior for getters.
     pub(crate) return_type: ReturnType,
     /// Optional custom parameter type to use instead of deriving from field type.
-    pub(crate) param_type_override: Option<TokenStream2>,
+    pub(crate) param_type_override: Option<proc_macro2::TokenStream>,
     /// A set of `FuncType` indicating which function types should be skipped.
     pub(crate) skip_flags: HashSet<FuncType>,
     /// A set of `FuncType` indicating which function types have been added.
